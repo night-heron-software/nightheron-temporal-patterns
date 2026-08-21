@@ -54,7 +54,9 @@ flowchart LR
 
 4. **Version the shape.** The new run may start on a newer build than the one that
    serialized the arguments. Give the input a `version` field and a migration step at the
-   top of the workflow, so old-shaped arguments are upgraded rather than misread.
+   top of the workflow, so old-shaped arguments are upgraded rather than misread. (Under
+   Worker Deployment Versioning, the rollover is also where a pinned entity can move to a
+   new build — see [Versioning Strategy](../versioning-strategy/).)
 
 5. **Carry deadlines, not durations.** A `'30 days'` timer restarts from zero in the new
    run. Store `expiresAt` and compute the remaining duration on entry.
