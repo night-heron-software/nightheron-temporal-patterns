@@ -107,7 +107,7 @@ through a **queue**, and each handler waits on **its own** exchange object.
 import {
   allHandlersFinished, ApplicationFailure, condition, continueAsNew, setHandler,
 } from '@temporalio/workflow';
-import type { Duration, SignalDefinition, UpdateDefinition } from '@temporalio/workflow';
+import type { Duration, SignalDefinition, UpdateDefinition } from '@temporalio/common';
 
 const isTerminal = (s: string): s is Terminal => s.startsWith('__terminal:');
 

@@ -17,8 +17,8 @@ no runnable application.
    domain workers") are fine and belong in Provenance; repository names, org names, and
    links are not. Code examples use neutral domain names (`orderWorkflow`, `cartWorkflow`,
    `itemWorkflow`).
-2. **No secrets, no absolute paths.** Nothing tracked may contain API keys, `/Users/...`
-   paths, AWS account IDs, or org-specific identifiers.
+2. **No secrets, no absolute paths.** Nothing tracked may contain API keys, home-directory
+   paths such as `/Users/<name>/…`, AWS account IDs, or org-specific identifiers.
 3. **Pattern template.** Every non-stub `patterns/<name>/README.md` follows the template in
    the project README: Problem → Solution → Example → Provenance → Gotchas → References.
    A stub is a title, a one-sentence summary, and `<!-- TODO: Full pattern writeup -->`.

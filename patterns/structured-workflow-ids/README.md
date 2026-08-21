@@ -25,7 +25,7 @@ unpredictable formats: bare UUIDs (`a3f2b1c4-...`), prefixed strings
 
 Define a single, parseable ID format and enforce it through one builder function:
 
-```
+```text
 {tenantId}.{domain}.{entityId}
 ```
 
@@ -197,7 +197,7 @@ const cart = await handle.query(getCartQuery);
 
 **Querying by correlation in the Temporal UI:**
 
-```
+```text
 TenantId = "store-001" AND Domain = "fulfillment" AND OrderId = "abc-123"
 ```
 

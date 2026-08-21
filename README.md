@@ -10,7 +10,7 @@ e-commerce platform, a starter template, and a full-stack demo — on the Tempor
 TypeScript SDK. They are not theoretical best practices; they are solutions to real
 problems encountered during development.
 
-> _This documentation was drafted with AI assistance._
+*This documentation was drafted with AI assistance.*
 
 > [!WARNING]
 > **Early-stage work in progress.** This catalog is in its initial form — most patterns
