@@ -157,6 +157,12 @@ Temporal usage patterns across all SDKs:
 - [Performance & Latency](https://docs.temporal.io/design-patterns/performance-latency-patterns) — Local Activities, Early Return via Local Activities, Eager Workflow Start
 - [Worker Configuration](https://docs.temporal.io/design-patterns/worker-configuration-patterns) — Worker-Specific Task Queues, Activity Dependency Injection
 
+The official Temporal documentation is the **definitive source** for those patterns —
+this repository's summary of them may not be up to date. They are listed here only for
+the purpose of identifying redundancy and overlap between the two catalogs; always refer
+to [docs.temporal.io/design-patterns](https://docs.temporal.io/design-patterns) for
+current descriptions and examples.
+
 The Night Heron patterns in this catalog focus on TypeScript-specific concerns (sandbox
 bundling, state machine architecture, CQRS projection strategies, enforcement mechanisms)
 that are complementary to the general patterns above. A formal overlap and equivalence
