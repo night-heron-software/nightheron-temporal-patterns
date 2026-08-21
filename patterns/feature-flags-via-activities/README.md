@@ -168,7 +168,8 @@ default".
 1. **Removing the flag read is a versioning change.** A workflow that recorded the
    `evaluateFlag` local activity expects it on replay. Deleting the call (once the feature
    is permanent) changes the command sequence — gate the removal with `patched()` or a new
-   worker deployment version, then clean up when no old executions remain.
+   worker deployment version, then clean up when no old executions remain. See
+   [Versioning Strategy](../versioning-strategy/).
 
 2. **Local activities are not free.** They run in the workflow task and are recorded as
    markers. Keep the evaluation to one call per decision, not one per loop iteration; cache

@@ -93,7 +93,8 @@ option is deprecated in the TypeScript SDK:
 import { defineSearchAttributeKey, SearchAttributeType } from '@temporalio/common';
 import type { SearchAttributePair } from '@temporalio/common';
 
-// One place declares every custom search attribute the application writes.
+// One place declares every custom search attribute the application writes —
+// see Typed Search Attributes for the full registry, upsert, read, and registration story.
 export const TenantIdKey      = defineSearchAttributeKey('TenantId',      SearchAttributeType.KEYWORD);
 export const DomainKey        = defineSearchAttributeKey('Domain',        SearchAttributeType.KEYWORD);
 export const CorrelationIdKey = defineSearchAttributeKey('CorrelationId', SearchAttributeType.KEYWORD);
@@ -245,5 +246,6 @@ simultaneously: structured IDs are self-describing, derivable, and tenant-scoped
 
 - [Temporal Workflow IDs — Best Practices](https://docs.temporal.io/workflow-execution/workflowid-runid#workflow-id)
 - [Temporal Search Attributes](https://docs.temporal.io/search-attribute#custom-search-attribute)
+- [Typed Search Attributes](../typed-search-attributes/) — the keys this builder writes, declared once
 - [`updateWithStart`](../update-with-start/) — uses the same ID builder for atomic lazy creation
 - [Enforcement Mechanisms](../../reference/enforcement-mechanisms.md) — where the lint rule above fits

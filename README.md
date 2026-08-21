@@ -13,7 +13,7 @@ problems encountered during development.
 *This documentation was drafted with AI assistance.*
 
 > [!WARNING]
-> **Early-stage.** All twenty patterns are written and every TypeScript example compiles
+> **Early-stage.** All twenty-two patterns are written and every TypeScript example compiles
 > against the Temporal TypeScript SDK (1.22) in CI — but the catalog has not been reviewed
 > by the Temporal team or validated in production at scale. It reflects patterns developed
 > during project work, not established best practices. Where an entry overlaps the official
@@ -65,6 +65,13 @@ problems encountered during development.
 | ✅ [Parent-Child with ABANDON](patterns/parent-child-abandon/) | Decoupling child workflow lifecycles from parents | [Task Orchestration](https://docs.temporal.io/design-patterns/task-orchestration-patterns) (Child Workflows) |
 | ✅ [Workflow-per-Entity vs. Singleton](patterns/workflow-per-entity-vs-singleton/) | Choosing the right cardinality model | [Entity & Lifecycle](https://docs.temporal.io/design-patterns/entity-lifecycle-patterns) (Entity Workflow) |
 | ✅ [Standalone Activities](patterns/standalone-activities/) | When a thin single-activity wrapper should skip the workflow shell | — |
+| ✅ [Typed Search Attributes](patterns/typed-search-attributes/) | One `defineSearchAttributeKey` registry for start, upsert, query, and namespace registration | — |
+
+### Evolution
+
+| Pattern | Summary | Official equivalent |
+|---|---|---|
+| ✅ [Versioning Strategy](patterns/versioning-strategy/) | Worker Deployment Versioning by default, `patched()` for hotfixes and surgical changes — and the rules for each | — |
 
 ### CQRS & Projections
 
@@ -107,7 +114,8 @@ the patterns that cite it:
 
 | Document | Summary |
 |---|---|
-| [Enforcement Mechanisms](reference/enforcement-mechanisms.md) | How to make patterns stick: lint rules, runtime guards, CI ratchets |
+| [Enforcement Mechanisms](reference/enforcement-mechanisms.md) | How to make patterns stick: lint rules, runtime guards, replay tests, CI ratchets |
+| [Replay Testing](reference/replay-testing.md) | Recording a history corpus, replaying it in CI, reading a failure, keeping coverage honest |
 
 ---
 
@@ -184,11 +192,12 @@ official page doesn't say for TypeScript" rather than a restatement.
 The entries with no counterpart are where this catalog earns its keep: sandbox bundling
 (Two-File Activity, Definitions File, Record-First DTOs), state-machine architecture
 (Prepare → Decide → Finalize, Chassaing Decider, State Machine Driver, Redemptive State
-Recovery), CQRS projections (Dirty-Flag, Workflow-Mediated, Document Builder), and the
-operational conventions (Structured Workflow IDs, Unified Worker Topology, Feature Flags
-via Activities, Standalone Activities) — plus
-[Enforcement Mechanisms](reference/enforcement-mechanisms.md), which is about making any
-of the above stick.
+Recovery), CQRS projections (Dirty-Flag, Workflow-Mediated, Document Builder), the
+operational conventions (Structured Workflow IDs, Typed Search Attributes, Unified Worker
+Topology, Feature Flags via Activities, Standalone Activities), and evolution (Versioning
+Strategy) — plus [Enforcement Mechanisms](reference/enforcement-mechanisms.md) and
+[Replay Testing](reference/replay-testing.md), which are about making any of the above
+stick.
 
 ---
 

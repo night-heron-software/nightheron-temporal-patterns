@@ -52,7 +52,8 @@ activity.
 - **Changing activity order** or inserting commands requires the
   [`patched()`](https://docs.temporal.io/develop/typescript/workflows/versioning#patching) API to branch
   old vs. new executions — or Worker Deployment Versioning, which pins each execution to the
-  build that started it so old and new code never replay each other's histories.
+  build that started it so old and new code never replay each other's histories. Which to
+  use, and when: [Versioning Strategy](../patterns/versioning-strategy/).
 - **Prove it in CI.** Replay recorded histories against the new build with
   `Worker.runReplayHistories()` before deploying — see
   [Enforcement Mechanisms — Replay Tests](../reference/enforcement-mechanisms.md#3-replay-tests).
@@ -70,6 +71,8 @@ this catalog. Other pages link here rather than repeating it.
 - [Temporal — Workflow Determinism](https://docs.temporal.io/workflow-definition#deterministic-constraints)
 - [Temporal — Versioning with `patched()`](https://docs.temporal.io/develop/typescript/workflows/versioning#patching)
 - [Temporal — Worker Deployment Versioning](https://docs.temporal.io/production-deployment/worker-deployments/worker-versioning)
+- [Versioning Strategy](../patterns/versioning-strategy/) — `patched()` vs Worker Deployment Versioning
+- [Replay Testing](../reference/replay-testing.md) — proving a change replays before deploying it
 - [State Machine Driver](../patterns/state-machine-driver/) and
   [Unified Worker Topology](../patterns/unified-worker-topology/) — patterns whose gotchas
   point here
