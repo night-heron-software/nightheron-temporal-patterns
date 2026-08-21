@@ -58,6 +58,7 @@ async function create(
     workflowsPath: require.resolve('./workflows'),
     activities,
     taskQueue: CART_TASK_QUEUE,
+    shutdownGraceTime: '20s',   // bounds activities that ignore cancellation; < the platform's kill timeout
     ...otelConfig,
   });
 }
@@ -192,6 +193,64 @@ the process forever. An application that also runs plugin workers or long-lived
 subprocesses grows this into an explicit registry of stoppable things, but the shape is
 the same.
 
+#### When there is more to stop than workers
+
+Once the process also owns plugin workers, a metrics server, or a subprocess, the
+`Promise.all` barrier is not enough: you want to stop things in a known order, give each a
+deadline, and *prove* that everything stopped. That is a process registry — the
+"verifiable shutdown" mentioned in the provenance:
+
+```typescript file=process-registry.ts
+import type { Worker } from '@temporalio/worker';
+
+export interface Stoppable {
+  name: string;
+  stop(): Promise<void>;
+}
+
+export class ProcessRegistry {
+  private readonly items: Stoppable[] = [];
+
+  register(item: Stoppable): void {
+    this.items.push(item);
+  }
+
+  /** A Temporal worker stops by shutdown() followed by its run() promise draining. */
+  worker(name: string, worker: Worker, running: Promise<void>): void {
+    this.register({ name, stop: async () => { worker.shutdown(); await running; } });
+  }
+
+  /** Reverse registration order, per-item deadline. Returns the names that missed it. */
+  async stopAll(deadlineMs: number): Promise<string[]> {
+    const late: string[] = [];
+    for (const item of [...this.items].reverse()) {
+      const deadline = new Promise<'timeout'>((resolve) => setTimeout(() => resolve('timeout'), deadlineMs));
+      const outcome = await Promise.race([item.stop().then(() => 'stopped' as const), deadline]);
+      console.info(`[shutdown] ${item.name}: ${outcome}`);
+      if (outcome === 'timeout') late.push(item.name);
+    }
+    return late;
+  }
+}
+```
+
+```typescript fragment
+// in the launcher
+const registry = new ProcessRegistry();
+registry.register({ name: 'metrics', stop: () => metricsServer.close() });
+for (const [name, w] of Object.entries(workers)) registry.worker(name, w, w.run());
+
+process.once('SIGTERM', async () => {
+  const late = await registry.stopAll(25_000);     // < the platform's kill budget (30s on ECS/K8s by default)
+  process.exit(late.length === 0 ? 0 : 1);         // a non-zero exit is the "did not drain" signal
+});
+```
+
+Workers register last and therefore stop first; the metrics server stays up until the
+workers have drained, so the last scrape sees the drain. A worker that exceeds its
+`shutdownGraceTime` resolves `run()` anyway (the SDK abandons the stuck activity); a
+`Stoppable` that hangs past the registry deadline is what the non-zero exit code reports.
+
 ### Scaling: the worker registry
 
 For larger applications, extract the per-domain configuration into a declarative
@@ -306,7 +365,14 @@ The pattern has two known prior-art influences:
    exactly one task queue. Starting "all" workers in a Lambda produces a function that
    polls multiple queues, none of them correctly — validate and fail fast.
 
-5. **Adding a new domain.** The registry (or the launcher's import list) is the only
+5. **`shutdownGraceTime` must be shorter than the platform's kill timeout.** Kubernetes
+   and ECS send SIGTERM and then SIGKILL after a budget (30 s by default); Lambda gives far
+   less. If the grace period (plus the time to drain N workers in sequence) exceeds that
+   budget, the process is killed mid-drain and the "graceful" part never happens. Size
+   grace time from the platform budget down, not from the activity duration up — and make
+   the registry's deadline the budget minus a margin.
+
+6. **Adding a new domain.** The registry (or the launcher's import list) is the only
    place a new domain is wired. If you forget it, the worker starts successfully but
    the new task queue is never polled — workflows start but are never picked up, with
    no error on either side. A test that asserts the registry keys match a canonical
@@ -316,4 +382,5 @@ The pattern has two known prior-art influences:
 
 - [Two-File Activity](../two-file-activity/) — the sandbox-safe activity import each domain worker uses
 - [Temporal TypeScript SDK — `Worker.shutdown()` / `shutdownGraceTime`](https://typescript.temporal.io/api/classes/worker.Worker#shutdown)
+- [Temporal TypeScript SDK — Run a worker process](https://docs.temporal.io/develop/typescript/workers/run-worker-process)
 - [Worker-Specific Task Queues](https://docs.temporal.io/design-patterns/worker-configuration-patterns) — the official pattern for routing work to specialized workers
