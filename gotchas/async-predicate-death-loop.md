@@ -1,14 +1,13 @@
 # Async Predicate Death Loop
 
-> Passing an `async` function to `wf.condition()` creates an infinite loop that burns
-> through the event history in seconds.
+> Passing an `async` function to `wf.condition()` makes the predicate always truthy —
+> the wait resolves immediately, and whatever loop surrounds it spins.
 
 ## The Trap
 
-`wf.condition()` takes a **synchronous** predicate. If you pass an `async` function,
-it returns a `Promise` — which is always truthy in JavaScript. The condition resolves
-immediately, the workflow advances, evaluates the condition again (still truthy),
-advances again, and repeats until the history size limit is hit.
+`wf.condition()` takes a **synchronous** predicate. If an `async` function is passed, it
+returns a `Promise` — which is always truthy in JavaScript. The condition resolves
+immediately, the surrounding loop re-evaluates it (still truthy), and repeats.
 
 ```typescript
 // ❌ DEATH LOOP: Promise is always truthy
@@ -22,17 +21,32 @@ await wf.condition(() => state.status === 'complete');
 
 ## Symptoms
 
-- Worker CPU spikes to 100%
-- The workflow generates thousands of events in milliseconds
-- Eventually hits the Temporal event history size limit
-- The error message does **not** mention the async predicate — you have to know this
+What you see depends on what the surrounding loop does between iterations:
+
+- **Loop body schedules nothing** (the common entity-workflow shape — `while (!done) { await
+  condition(...); dispatch(); }`): no commands are produced, so the workflow task never
+  completes. Worker CPU pins at 100% and the SDK's deadlock detector fails the task with
+  `Potential deadlock detected: workflow didn't yield within 1 second(s)`.
+- **Loop body schedules a timer or activity each iteration**: the history grows by several
+  events per spin until the event-count or size limit is hit and the workflow is terminated.
+
+In neither case does the error mention the predicate — you have to know this.
 
 ## Why It's Hard to Catch
 
-- TypeScript does not warn about this — `async () => boolean` is assignable to
-  `() => boolean` because a Promise is truthy
-- The behavior looks like an infinite loop in the workflow logic, not a predicate issue
-- The SDK does not validate that the predicate is synchronous at runtime
+`condition` is typed `fn: () => boolean`, so a plain `async () => …` argument **is** a
+compile error (`Promise<boolean>` is not assignable to `boolean`). The trap gets through
+in the cases the type checker does not see:
+
+- a predicate that is typed `any` or comes from an untyped helper;
+- plain JavaScript, or a `// @ts-ignore` / `as any` left over from a refactor;
+- the disguised form — a *synchronous* arrow that kicks off async work and returns a
+  constant: `condition(() => { void refresh(); return ready; })`, where `ready` is set
+  by the async work and so is stale until it runs;
+- the SDK does not validate the predicate's return type at runtime.
+
+TypeScript is the first line of defense; the lint rule below is defense-in-depth for the
+cases above, and fires with a message that names the fix.
 
 ## Prevention
 
@@ -43,9 +57,16 @@ Lint for `async` functions passed to `condition()`:
 {
   rules: {
     'no-restricted-syntax': ['error', {
-      selector: 'CallExpression[callee.property.name="condition"] > ArrowFunctionExpression[async=true]',
+      selector: 'CallExpression[callee.property.name="condition"] > :matches(ArrowFunctionExpression, FunctionExpression)[async=true]',
       message: 'condition() predicates must be synchronous. Remove async.',
     }],
   },
 }
 ```
+
+## See Also
+
+- [State Machine Driver](../patterns/state-machine-driver/) — the driver owns the single
+  `condition()` loop so individual state functions never write one
+- [Enforcement Mechanisms](../reference/enforcement-mechanisms.md) — where this lint rule sits
+  in the enforcement hierarchy
