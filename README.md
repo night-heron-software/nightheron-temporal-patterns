@@ -12,6 +12,16 @@ problems encountered during development.
 
 > _This documentation was drafted with AI assistance._
 
+> [!WARNING]
+> **Early-stage work in progress.** This catalog is in its initial form — most patterns
+> are stubs with only a one-sentence summary. The fully-written entries have not been
+> reviewed by the Temporal team or validated in production at scale; they reflect patterns
+> developed during project work, not established best practices. Some patterns may overlap
+> with or duplicate concepts in the official
+> [Temporal Design Patterns](https://docs.temporal.io/design-patterns) catalog — a formal
+> equivalence analysis has not been done. Expect structural changes, renames, and
+> corrections as the catalog matures.
+
 ---
 
 ## Pattern Catalog
