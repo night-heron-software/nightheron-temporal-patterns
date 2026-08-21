@@ -48,3 +48,10 @@ This gotcha does not appear in Go or Java Temporal SDKs. TypeScript's control-fl
 narrowing assumes that assignments between a check and its use happen synchronously —
 a reasonable assumption in most code, but wrong for Temporal workflows where
 `condition()` yields to signal handlers.
+
+## See Also
+
+- [Signals, Updates & Queries](../patterns/signals-updates-queries/) — the handler-writes,
+  loop-reads shape that creates this situation
+- [State Machine Driver](../patterns/state-machine-driver/) — the driver reads its queues
+  through length checks, so individual state functions never hit this

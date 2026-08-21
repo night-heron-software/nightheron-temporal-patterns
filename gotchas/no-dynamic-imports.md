@@ -26,14 +26,19 @@ else throw new Error(`Unknown strategy type: ${type}`);
 
 ## Why It Matters
 
-1. **The dynamically imported module is not captured in the bundle.** It won't be
-   available in the V8 isolate, causing a runtime `ModuleNotFoundError`.
+1. **The bundler cannot resolve a computed specifier.** With a fully dynamic string the
+   module is simply absent from the bundle and the first workflow task that takes that
+   branch fails with a module-not-found error. With a partially static string
+   (`./strategies/${type}`) webpack may instead build a *context* — every file in the
+   directory is pulled in, including ones never meant to run in the sandbox, and the
+   sandbox's disallowed-module check sees them only if they are reachable statically.
 
-2. **Even if it resolves**, the imported code runs outside the sandbox's determinism
-   guarantees — `Math.random()` and `Date.now()` are not intercepted.
+2. **The failure surfaces at runtime**, on the first execution that takes the branch, not
+   at build time — so it slips past tests that do not exercise every strategy.
 
-3. **The error surfaces at runtime during the import**, not at build time, making it
-   hard to catch in tests that don't exercise every code path.
+3. **It buys nothing.** The whole bundle is already loaded into the isolate; lazy loading
+   saves no memory or startup time. What it costs is legibility: the reader, the linter,
+   and the bundler can no longer tell which modules are workflow code.
 
 ## Prevention
 
@@ -51,3 +56,9 @@ Ban dynamic imports in workflow files:
   files: ['**/workflows.ts', '**/workflows/**/*.ts'],
 }
 ```
+
+## See Also
+
+- [Two-File Activity](../patterns/two-file-activity/) — the structural boundary that keeps
+  I/O modules out of the static graph in the first place
+- [Worker Restart and Replay](worker-restart-replay.md) — what the sandbox does guarantee

@@ -88,7 +88,8 @@ problems encountered during development.
 
 ## Gotchas
 
-TypeScript-specific pitfalls that don't fit neatly into a pattern:
+TypeScript-specific pitfalls that don't fit neatly into a pattern. Each one links back to
+the patterns that cite it:
 
 | Gotcha | Summary |
 |---|---|
@@ -139,6 +140,36 @@ Sharp edges encountered when applying the pattern.
 ## References
 
 Links to SDK docs, papers, and related patterns in this catalog.
+```
+
+## Gotcha Template
+
+Gotchas are shorter and shaped around a single trap:
+
+```markdown
+# Gotcha Name
+
+> One-sentence summary.
+
+## The Trap
+
+The code that looks right and isn't, with a ❌ / ✅ pair.
+
+## Symptoms          (optional)
+
+What you observe when you hit it.
+
+## Why ...           (Why It's Hard to Catch / Why It Matters / Why This Is TypeScript-Specific)
+
+The mechanism.
+
+## Prevention        (or "The Fix")
+
+The lint rule, type trick, or habit that stops it.
+
+## See Also
+
+The patterns that cite this gotcha, and related gotchas.
 ```
 
 ---

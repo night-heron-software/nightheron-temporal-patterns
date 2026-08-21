@@ -1,10 +1,10 @@
 # Enforcement Mechanisms
 
-> How to make patterns stick: lint rules, runtime guards, and CI ratchets.
+> How to make patterns stick: lint rules, runtime guards, replay tests, and CI ratchets.
 
 An architecture pattern that lives only in documentation will be violated by the first
 contributor — human or AI agent — who never read it. The patterns in this catalog are
-designed to be **enforced**, not just documented. This reference describes three
+designed to be **enforced**, not just documented. This reference describes four
 enforcement mechanisms, in order of preference.
 
 ---
@@ -37,11 +37,14 @@ Force all Temporal client usage through a single wrapper module:
 
 ### Banning inline workflow IDs
 
+Target the places an ID is *assigned*, not every template literal in the codebase:
+
 ```javascript
 {
+  files: ['src/**/client/**/*.ts', 'src/**/workflows.ts', 'src/**/workflows/**/*.ts'],
   rules: {
     'no-restricted-syntax': ['error', {
-      selector: 'TemplateLiteral[expressions.length>=2]',
+      selector: ':matches(VariableDeclarator[id.name=/[wW]orkflowId$/], Property[key.name="workflowId"]) > TemplateLiteral',
       message: 'Build workflow IDs with buildWorkflowId(), never inline.',
     }],
   },
@@ -50,17 +53,15 @@ Force all Temporal client usage through a single wrapper module:
 
 ### Banning clock reads in decision functions
 
+Cover both declaration shapes — `function decide()` and `const decide = () =>`:
+
 ```javascript
 {
   rules: {
     'no-restricted-syntax': ['error',
       {
-        selector: ':matches(FunctionDeclaration, FunctionExpression)[id.name="decide"] CallExpression[callee.object.name="Date"]',
+        selector: ':matches(FunctionDeclaration[id.name="decide"], VariableDeclarator[id.name="decide"] > :function) :matches(CallExpression[callee.object.name="Date"], NewExpression[callee.name="Date"])',
         message: 'decide() must be pure — no Date calls. Inject timestamps via prepare().',
-      },
-      {
-        selector: ':matches(FunctionDeclaration, FunctionExpression)[id.name="decide"] NewExpression[callee.name="Date"]',
-        message: 'decide() must be pure — no Date construction. Inject timestamps via prepare().',
       },
     ],
   },
@@ -73,7 +74,7 @@ Force all Temporal client usage through a single wrapper module:
 {
   rules: {
     'no-restricted-syntax': ['error', {
-      selector: 'CallExpression[callee.property.name="condition"] > ArrowFunctionExpression[async=true]',
+      selector: 'CallExpression[callee.property.name="condition"] > :matches(ArrowFunctionExpression, FunctionExpression)[async=true]',
       message: 'condition() predicates must be synchronous. Remove async. See gotchas/async-predicate-death-loop.md.',
     }],
   },
@@ -98,9 +99,11 @@ projection writer) and validates every call at execution time.
 
 ### Example: Tenant isolation guard
 
-Every Cassandra query touching tenant data must include `store_id` in the `WHERE`
-clause. A lint rule cannot see a dynamically-built query string, but a guard inside
-the shared `executeCql` wrapper can:
+The instance below is Cassandra-specific (the tenant column is `store_id`); the shape —
+one wrapper every query goes through, one check inside it — is the pattern. Every query
+touching tenant data must include the tenant column in the `WHERE` clause. A lint rule
+cannot see a dynamically-built query string, but a guard inside the shared `executeCql`
+wrapper can:
 
 ```typescript
 function executeCql(query: string, params: unknown[]): Promise<ResultSet> {
@@ -134,7 +137,59 @@ Use an environment variable to control guard severity:
 
 ---
 
-## 3. CI Ratchets
+## 3. Replay Tests
+
+**Best for:** the one rule no lint or guard can check — that a change to workflow code is
+still compatible with every execution already in flight.
+
+This is Temporal's own enforcement mechanism and the catalog's patterns lean on it
+constantly: every rule about determinism, every `patched()` branch, every "safe evolution"
+claim in [Worker Restart and Replay](../gotchas/worker-restart-replay.md) is *testable*.
+Export histories from a real environment, replay them against the candidate build, and
+fail CI on a `DeterminismViolationError`.
+
+```typescript
+// replay.test.ts
+import { readdir, readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { Worker } from '@temporalio/worker';
+
+it('replays recorded histories without non-determinism', async () => {
+  const dir = path.join(__dirname, 'histories');          // exported JSON, committed
+  const files = (await readdir(dir)).filter((f) => f.endsWith('.json'));
+  expect(files.length).toBeGreaterThan(0);                // an empty corpus is a silent pass
+
+  const histories = await Promise.all(
+    files.map(async (f) => ({
+      workflowId: f.replace(/\.json$/, ''),
+      history: JSON.parse(await readFile(path.join(dir, f), 'utf8')),
+    })),
+  );
+
+  for await (const result of Worker.runReplayHistories(
+    { workflowsPath: require.resolve('../src/workflows') },
+    histories,
+  )) {
+    if (result.error) {
+      throw new Error(`${result.workflowId}/${result.runId}: ${result.error.message}`);
+    }
+  }
+});
+```
+
+Refresh the corpus with the CLI — `temporal workflow show --workflow-id <id> --output json
+> histories/<id>.json` — one history per distinct code path (each state, each `patched()`
+branch, at least one `continueAsNew`).
+
+**Strength:** checks the property that actually breaks production, against real data, with
+no mocks.
+
+**Limitation:** only as good as the corpus. A path with no recorded history is not checked;
+keep a test that asserts the corpus covers every state in the registry.
+
+---
+
+## 4. CI Ratchets
 
 **Best for:** rules you cannot retrofit in one pass — existing violations need a gradual
 migration path.
@@ -144,9 +199,10 @@ increases. Existing violations are tolerated (documented), but new ones are bloc
 
 ### Example: `ALLOW FILTERING` ratchet
 
-Cassandra's `ALLOW FILTERING` changes a query's cost class from result-set-proportional
-to table-proportional. Banning it outright would require rewriting existing queries;
-a ratchet prevents new ones:
+(Cassandra again — substitute whatever your store's "accidentally a full scan" construct
+is.) `ALLOW FILTERING` changes a query's cost class from result-set-proportional to
+table-proportional. Banning it outright would require rewriting existing queries; a
+ratchet prevents new ones:
 
 ```typescript
 // cassandra-conventions.test.ts
@@ -186,21 +242,25 @@ value is a documented, auditable decision.
 
 ```mermaid
 flowchart TD
-    A["New pattern or rule"] --> B{"Expressible over\nthe syntax tree?"}
-    B -->|Yes| C["Lint rule\n(no-restricted-syntax)"]
-    B -->|No| D{"Checkable at\na single choke point?"}
-    D -->|Yes| E["Runtime guard\n(executeCql, fetchApi)"]
-    D -->|No| F{"Existing violations\nto migrate?"}
-    F -->|Yes| G["CI ratchet\n(count ≤ baseline)"]
-    F -->|No| H["CI test\n(assert zero)"]
+    A["New pattern or rule"] --> R{"Is the rule<br/>'this change must replay<br/>old histories'?"}
+    R -->|Yes| RT["Replay test<br/>(runReplayHistories)"]
+    R -->|No| B{"Expressible over<br/>the syntax tree?"}
+    B -->|Yes| C["Lint rule<br/>(no-restricted-syntax)"]
+    B -->|No| D{"Checkable at<br/>a single choke point?"}
+    D -->|Yes| E["Runtime guard<br/>(executeCql, fetchApi)"]
+    D -->|No| F{"Existing violations<br/>to migrate?"}
+    F -->|Yes| G["CI ratchet<br/>(count ≤ baseline)"]
+    F -->|No| H["CI test<br/>(assert zero)"]
 ```
 
 ## The Hierarchy
 
 1. **Lint rules** are best because they fire at write time, in the developer's editor.
 2. **Runtime guards** are next because they catch what lint cannot see.
-3. **CI ratchets** are last resort — they catch violations only at push time, and they
+3. **Replay tests** are the only check for determinism across a change; they run in CI
+   but against real histories, which is why they rank above ratchets.
+4. **CI ratchets** are last resort — they catch violations only at push time, and they
    tolerate existing violations.
 
-All three are better than documentation alone. A pattern without enforcement is a
+All four are better than documentation alone. A pattern without enforcement is a
 suggestion.

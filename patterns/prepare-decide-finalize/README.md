@@ -12,9 +12,10 @@ state comes next?). This creates three problems:
 1. **Untestable decisions.** Testing a handler that calls three activities requires
    mocking all three, even when you only want to test the decision branch.
 
-2. **Non-determinism risk.** Business logic interleaved with activity calls means the
-   decision depends on I/O results that may change between executions, making workflows
-   harder to reason about during replay.
+2. **Opaque decisions.** When branch logic is interleaved with `await`s, the decision is
+   smeared across the handler and depends on intermediate activity results. Replay is not
+   the danger — activity results are read back from history — but the event history shows
+   *what* happened, not *why*, and the "why" cannot be examined without re-running the I/O.
 
 3. **Unclear failure boundaries.** When a handler fails, it's ambiguous whether the
    failure was in the decision (a bug) or in the I/O (an infrastructure issue that
@@ -49,9 +50,11 @@ flowchart LR
    not perform I/O. It receives the command and any data gathered by `prepare`, and
    returns the decision: next state, context updates, and response.
 
-2. **`decide` must not access the clock or randomness.** Timestamps and UUIDs are
-   generated in `prepare` and injected into the command. The decision function sees
-   time as data, not as a system call.
+2. **`decide` must not read the clock or randomness.** In the TypeScript sandbox
+   `Date.now()` and `Math.random()` are deterministic, so this is a *purity* rule, not a
+   replay-safety rule: time and IDs are inputs — stamped by the caller in the command
+   metadata, or produced in `prepare` — so the decision is a function of its arguments
+   alone and a test can pin them.
 
 3. **`prepare` results are passed as a parameter to `decide`.** The prepare phase
    gathers everything the decision needs; the decision never reaches back to fetch
@@ -83,6 +86,9 @@ async function prepare(
     calculateShipping(command.address, ctx.items),
     calculateTax(command.address, ctx.items),
   ]);
+  // The caller stamped `meta.timestamp` when it sent the command; prepare passes it
+  // through so decide sees time as data. A prepare that needs its own timestamp may
+  // use `Date.now()` — deterministic inside the sandbox.
   return { shippingCost, tax, timestamp: command.meta.timestamp };
 }
 
@@ -176,10 +182,12 @@ side effects.
 
 ## Gotchas
 
-1. **Clock reads belong in `prepare`, not `decide`.** If you call `Date.now()` inside
-   `decide`, the decision becomes non-deterministic under replay. Generate timestamps in
-   `prepare` (via an activity or `wf.currentTimeMs()`) and inject them into the command
-   metadata.
+1. **Clock reads belong in `prepare` (or the caller), not `decide`.** A `Date.now()`
+   inside `decide` will not break replay — the sandbox patches it — but it makes the
+   decision untestable without faking the clock and hides a dependency. Take timestamps
+   from the command metadata or from `prepare`, and pass them in as data. The lint rule in
+   [Enforcement Mechanisms](../../reference/enforcement-mechanisms.md) bans `Date` inside
+   any function named `decide`.
 
 2. **`decide` must not throw for rejected commands.** A rejected command is a valid
    business outcome (`{ accepted: false, reason: "..." }`), not an exception. Reserve

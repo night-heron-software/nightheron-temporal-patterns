@@ -21,8 +21,9 @@ boilerplate:
 
 Writing this loop by hand in every workflow is error-prone: forgetting
 `allHandlersFinished` loses update responses, forgetting to count signals toward the
-`continueAsNew` threshold causes history overflow, and dispatching timeouts incorrectly
-creates the async predicate death loop.
+`continueAsNew` threshold causes history overflow, holding a pending update in a single
+variable instead of a queue drops the second of two concurrent updates, and dispatching
+timeouts incorrectly creates the async predicate death loop.
 
 ## Solution
 
@@ -33,18 +34,19 @@ automatically without external input).
 
 ```mermaid
 flowchart TD
-    A["runStateMachine()"] --> B["Register handlers"]
+    A["runStateMachine()"] --> B["Register handlers<br/>(queues, not slots)"]
     B --> C["Main loop"]
     C --> D{"Input arrives?"}
     D -->|"Update"| E["Dispatch to state fn"]
     D -->|"Signal"| E
     D -->|"Timeout"| E
-    E --> F["State fn returns\nnext + context"]
-    F --> G{"Terminal?"}
-    G -->|No| H{"continueAsNew\nthreshold?"}
+    E --> F["State fn returns<br/>next + context"]
+    F --> R["Answer the update caller"]
+    R --> G{"Terminal?"}
+    G -->|No| H{"continueAsNew<br/>threshold?"}
     H -->|No| C
-    H -->|Yes| I["allHandlersFinished\n→ continueAsNew"]
-    G -->|Yes| J["onTerminal\n→ return"]
+    H -->|Yes| I["allHandlersFinished<br/>→ continueAsNew"]
+    G -->|Yes| J["Drain queue, reject leftovers<br/>→ onTerminal → return"]
 ```
 
 ### The state function contract
@@ -57,14 +59,16 @@ a `StateOutput`:
 type StateInput<TEvent, TSignal = never> =
   | { kind: 'event'; event: TEvent; timestamp: string }     // from an Update
   | { kind: 'signal'; result: TSignal; timestamp: string }   // from a Signal
-  | { kind: 'timeout'; timestamp: string };                  // timer elapsed
+  | { kind: 'timeout'; timestamp: string };                  // timer elapsed (or transitional)
+
+type Terminal = `__terminal:${string}`;
 
 // What a state function returns
-interface StateOutput<TState, TContext, TResponse> {
+interface StateOutput<TState extends string, TContext, TResponse> {
   context: TContext;                          // the (possibly updated) context
-  next: TState | `__terminal:${string}`;      // next state or terminal
+  next: TState | Terminal;                    // next state or terminal
   response?: TResponse;                       // returned to the Update caller
-  error?: string;                             // error message for the caller
+  error?: string;                             // thrown to the Update caller
   rejected?: boolean;                         // true = no transition, no recording
 }
 ```
@@ -72,86 +76,143 @@ interface StateOutput<TState, TContext, TResponse> {
 ### The state config
 
 ```typescript
-interface StateConfig<TState, TEvent, TContext, TResponse, TSignal = never> {
+interface StateConfig<TState extends string, TEvent, TContext, TResponse, TSignal = never> {
   fn: (ctx: TContext, input: StateInput<TEvent, TSignal>)
     => Promise<StateOutput<TState, TContext, TResponse>>;
   timeout?: Duration | ((ctx: TContext) => Duration);   // per-state, optionally dynamic
   transitional?: boolean;  // auto-advance without waiting for external input
 }
 
-type StateRegistry<TState, TEvent, TContext, TResponse, TSignal = never> =
+type StateRegistry<TState extends string, TEvent, TContext, TResponse, TSignal = never> =
   Record<TState, StateConfig<TState, TEvent, TContext, TResponse, TSignal>>;
+
+interface StateMachineConfig<TState extends string, TEvent, TContext, TResponse, TSignal = never> {
+  states: StateRegistry<TState, TEvent, TContext, TResponse, TSignal>;
+  initialState: TState;
+  continueAsNewThreshold?: number;                                   // default 500 inputs
+  serializeForContinueAsNew: (ctx: TContext, state: TState) => unknown[];
+  onTransition?: (from: TState, to: TState | Terminal, ctx: TContext) => Promise<void>;
+  onTerminal?: (ctx: TContext, state: Terminal) => Promise<void>;
+}
 ```
 
 ### The driver
 
+The code below is abridged (cancellation handling, transition recording, and multi-update
+registration are omitted) but every line that *is* shown reflects the semantics the
+driver must have. Two of them are easy to get wrong and are called out inline: updates go
+through a **queue**, and each handler waits on **its own** exchange object.
+
 ```typescript
-async function runStateMachine<TState, TEvent, TContext, TResponse, TSignal>(
+import {
+  allHandlersFinished, ApplicationFailure, condition, continueAsNew, setHandler,
+} from '@temporalio/workflow';
+import type { Duration, SignalDefinition, UpdateDefinition } from '@temporalio/workflow';
+
+const isTerminal = (s: string): s is Terminal => s.startsWith('__terminal:');
+
+interface UpdateExchange<TEvent, TResponse> {
+  event: TEvent;
+  processed: boolean;
+  result?: TResponse;
+  error?: string;
+}
+
+export async function runStateMachine<
+  TState extends string, TEvent, TContext, TResponse, TSignal = never,
+>(
   config: StateMachineConfig<TState, TEvent, TContext, TResponse, TSignal>,
   initialContext: TContext,
-  updates: UpdateDefinition<TResponse, [TEvent]> | MappedUpdateRegistration[],
-  signals?: SignalDefinition<[TSignal]> | SignalRegistration[],
+  updateDef: UpdateDefinition<TResponse, [TEvent]>,
+  signalDef?: SignalDefinition<[TSignal]>,
 ): Promise<TContext> {
   let ctx = initialContext;
-  let currentState = config.initialState;
+  let currentState: TState | Terminal = config.initialState;
   let inputCount = 0;
 
-  // Register update handler(s) — writes to an exchange slot
-  let pendingUpdate: UpdateExchange | null = null;
-  setHandler(updateDef, (event) => {
-    pendingUpdate = { event, processed: false };
-    return condition(() => pendingUpdate?.processed === true);
+  // FIFO queues — never single slots. Two inputs that arrive in the same workflow
+  // task must both be processed, in order, and both callers must be answered.
+  const updateQueue: UpdateExchange<TEvent, TResponse>[] = [];
+  const signalQueue: TSignal[] = [];
+
+  // Each update handler owns its exchange object and waits on THAT object — never on
+  // a shared variable the main loop reassigns, or the handler hangs forever.
+  setHandler(updateDef, async (event: TEvent): Promise<TResponse> => {
+    const entry: UpdateExchange<TEvent, TResponse> = { event, processed: false };
+    updateQueue.push(entry);
+    await condition(() => entry.processed);
+    if (entry.error !== undefined) {
+      throw ApplicationFailure.nonRetryable(entry.error);
+    }
+    return entry.result as TResponse;
   });
+  if (signalDef) {
+    setHandler(signalDef, (result: TSignal) => { signalQueue.push(result); });
+  }
 
-  // Register signal handler(s) — writes to a signal slot
-  let pendingSignal: TSignal | null = null;
-  setHandler(signalDef, (signal) => { pendingSignal = signal; });
+  const hasInput = () => updateQueue.length > 0 || signalQueue.length > 0;
 
-  // Main loop
   while (!isTerminal(currentState)) {
     const stateConfig = config.states[currentState];
-    const timeout = resolveTimeout(stateConfig.timeout, ctx);
+    const timestamp = new Date().toISOString();   // sandbox-deterministic
+    let input: StateInput<TEvent, TSignal>;
+    let active: UpdateExchange<TEvent, TResponse> | undefined;
 
-    // Wait for input or timeout
-    const gotInput = await condition(
-      () => pendingUpdate !== null || pendingSignal !== null,
-      timeout,
-    );
+    if (stateConfig.transitional) {
+      // Auto-advance: no wait. A synthesized timeout-shaped input keeps the contract uniform.
+      input = { kind: 'timeout', timestamp };
+    } else {
+      const timeout = typeof stateConfig.timeout === 'function'
+        ? stateConfig.timeout(ctx)
+        : stateConfig.timeout;
+      const woke = timeout === undefined
+        ? await condition(hasInput).then(() => true)
+        : await condition(hasInput, timeout);
+      if (!woke) {
+        input = { kind: 'timeout', timestamp };
+      } else if (signalQueue.length > 0) {
+        input = { kind: 'signal', result: signalQueue.shift()!, timestamp };
+      } else {
+        active = updateQueue.shift()!;
+        input = { kind: 'event', event: active.event, timestamp };
+      }
+    }
 
-    // Build the StateInput
-    const input = buildInput(pendingUpdate, pendingSignal, gotInput);
-
-    // Dispatch to state function
+    const from = currentState;
     const output = await stateConfig.fn(ctx, input);
 
-    // Apply transition
-    ctx = output.context;
-    currentState = output.next;
-    inputCount++;
-
-    // Release the update caller with response or error
-    if (pendingUpdate) {
-      pendingUpdate.result = output.response;
-      pendingUpdate.error = output.error;
-      pendingUpdate.processed = true;
-      pendingUpdate = null;
-    }
-    pendingSignal = null;
-
-    // Lifecycle hooks
     if (!output.rejected) {
-      config.onContextUpdate?.(ctx, currentState);
-      await config.onTransition?.(fromState, currentState, event, ctx);
+      ctx = output.context;
+      currentState = output.next;
+      await config.onTransition?.(from, currentState, ctx);
     }
 
-    // continueAsNew guard
-    if (inputCount >= (config.continueAsNewThreshold ?? 500)) {
-      await condition(allHandlersFinished);
-      await continueAsNew(config.serializeForContinueAsNew(ctx, currentState));
+    // Answer the update caller — accepted or rejected, it always gets a reply.
+    if (active) {
+      active.result = output.response;
+      active.error = output.error;
+      active.processed = true;
+    }
+
+    inputCount++;
+    if (!isTerminal(currentState) && inputCount >= (config.continueAsNewThreshold ?? 500)) {
+      // A queued update IS an unfinished handler, so `condition(allHandlersFinished)`
+      // alone would deadlock whenever something is waiting. Wake on either.
+      await condition(() => allHandlersFinished() || hasInput());
+      if (allHandlersFinished() && !hasInput()) {
+        await continueAsNew(...config.serializeForContinueAsNew(ctx, currentState));
+      }
+      // else: loop once more, drain the queue, and retry the guard.
     }
   }
 
-  // Terminal cleanup
+  // Terminal: answer anyone still queued so their handlers can finish, then exit.
+  while (updateQueue.length > 0) {
+    const entry = updateQueue.shift()!;
+    entry.error = 'Workflow reached terminal state';
+    entry.processed = true;
+  }
+  await condition(allHandlersFinished);
   await config.onTerminal?.(ctx, currentState);
   return ctx;
 }
@@ -161,15 +222,15 @@ async function runStateMachine<TState, TEvent, TContext, TResponse, TSignal>(
 
 | Concern | How |
 |---|---|
-| **Handler registration** | `setHandler` for updates and signals, with exchange slots |
+| **Handler registration** | `setHandler` for updates and signals, each feeding a FIFO queue |
 | **Input multiplexing** | Discriminated `StateInput` unifies updates, signals, and timeouts |
 | **Per-state timeouts** | `timeout` on `StateConfig`, optionally a function of context |
 | **Transitional states** | `transitional: true` — immediate re-entry without waiting for input |
-| **`continueAsNew`** | Counts ALL inputs (updates + signals + timeouts), guards with `allHandlersFinished` |
-| **Terminal states** | `__terminal:reason` convention — the driver exits the loop |
-| **Rejection** | `rejected: true` on the output skips transition hooks and recording |
-| **Cancellation** | Catches `CancellationScope`, calls `onCancellation` hook |
-| **Transition recording** | Optional async sink that batches and flushes transition records |
+| **`continueAsNew`** | Counts ALL inputs (updates + signals + timeouts); guards with `allHandlersFinished` *or* queued input |
+| **Terminal states** | `__terminal:reason` convention — the driver drains the queue and exits the loop |
+| **Rejection** | `rejected: true` on the output skips the transition and hooks; the caller still gets `response`/`error` |
+| **Cancellation** | Catches `CancelledFailure`, calls `onCancellation` hook (omitted above) |
+| **Transition recording** | Optional async sink that batches and flushes transition records (omitted above) |
 
 ## Example
 
@@ -228,7 +289,7 @@ const states: StateRegistry<OrderState, OrderEvent, OrderContext, OrderResponse>
 // workflows.ts — the workflow is 5 lines
 export async function orderWorkflow(input: OrderInput): Promise<OrderContext> {
   return runStateMachine(
-    { states, initialState: 'pending', onTerminal: finalizeOrder },
+    { states, initialState: 'pending', onTerminal: finalizeOrder, serializeForContinueAsNew },
     buildInitialContext(input),
     orderUpdateDef,
   );
@@ -251,7 +312,9 @@ The `runStateMachine` driver is a first-party framework. Its design draws from t
 The framework was developed incrementally: first as a thin loop extraction, then
 extended with per-state timeouts, transitional states, rejection semantics,
 `continueAsNew` guarding, transition recording (async batched persistence of every
-state change for observability), and projection lifecycle management.
+state change for observability), and projection lifecycle management. The queue-not-slot
+and wait-on-own-entry rules were both learned the hard way — the first version of the
+driver had exactly the two bugs described in the gotchas below.
 
 ## Gotchas
 
@@ -272,8 +335,22 @@ state change for observability), and projection lifecycle management.
    (e.g., an account lifecycle) grows history with every signal — counting only updates
    would never trigger `continueAsNew`.
 
-5. **Workers do not hot-reload workflow code.** After changing state functions, restart
-   the worker. The new code takes effect for new workflow tasks.
+5. **A single pending-update variable loses updates.** Two updates delivered in the same
+   workflow task both run their handlers before the main loop wakes; with one slot the
+   second overwrites the first, and the first caller waits forever. Use a FIFO queue.
+
+6. **Handlers must wait on their own exchange object.** `condition(() =>
+   pending?.processed)` closes over the *variable*; once the loop sets `pending = null`
+   the predicate can never become true and the update caller hangs. Capture `const entry`
+   and wait on `entry.processed`.
+
+7. **`condition(allHandlersFinished)` can deadlock before `continueAsNew`.** A queued
+   update is an in-flight handler. If the guard only waits for handlers to finish, and a
+   handler is waiting for the loop, neither proceeds. Wake on *either* "all finished" or
+   "input queued", and only `continueAsNew` when the queue is empty.
+
+8. **Workers do not hot-reload workflow code.** After changing state functions, restart
+   the worker — see [Worker Restart and Replay](../../gotchas/worker-restart-replay.md#workers-do-not-hot-reload-workflow-code).
 
 ## References
 
@@ -283,3 +360,4 @@ state change for observability), and projection lifecycle management.
 - [Chassaing Decider](../chassaing-decider/) — the pure core inside the state function
 - [`allHandlersFinished`](../all-handlers-finished/) — the lifecycle guard the driver uses
 - [`continueAsNew`](../continue-as-new/) — the history-reset mechanism the driver manages
+- [Async Predicate Death Loop](../../gotchas/async-predicate-death-loop.md) — why the driver owns the only `condition()` loop
