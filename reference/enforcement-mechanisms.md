@@ -179,7 +179,9 @@ it('replays recorded histories without non-determinism', async () => {
 
 Refresh the corpus with the CLI — `temporal workflow show --workflow-id <id> --output json
 > histories/<id>.json` — one history per distinct code path (each state, each `patched()`
-branch, at least one `continueAsNew`).
+branch, at least one `continueAsNew`). The full recipe — corpus curation, a coverage
+assertion against the state registry, reading a failure, CI wiring — is in
+[Replay Testing](replay-testing.md).
 
 **Strength:** checks the property that actually breaks production, against real data, with
 no mocks.
