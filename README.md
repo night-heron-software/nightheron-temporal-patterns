@@ -59,24 +59,24 @@ problems encountered during development.
 |---|---|
 | ✅ [`continueAsNew`](patterns/continue-as-new/) | Resetting event history for long-running workflows without losing state |
 | ✅ [Structured Workflow IDs](patterns/structured-workflow-ids/) | Parseable, predictable `{tenantId}.{domain}.{entityId}` identifiers |
-| 🔲 [Parent-Child with ABANDON](patterns/parent-child-abandon/) | Decoupling child workflow lifecycles from parents |
-| 🔲 [Workflow-per-Entity vs. Singleton](patterns/workflow-per-entity-vs-singleton/) | Choosing the right cardinality model |
-| 🔲 [Standalone Activities](patterns/standalone-activities/) | When a thin single-activity wrapper should skip the workflow shell |
+| ✅ [Parent-Child with ABANDON](patterns/parent-child-abandon/) | Decoupling child workflow lifecycles from parents |
+| ✅ [Workflow-per-Entity vs. Singleton](patterns/workflow-per-entity-vs-singleton/) | Choosing the right cardinality model |
+| ✅ [Standalone Activities](patterns/standalone-activities/) | When a thin single-activity wrapper should skip the workflow shell |
 
 ### CQRS & Projections
 
 | Pattern | Summary |
 |---|---|
-| 🔲 [Dirty-Flag Projection](patterns/dirty-flag-projection/) | Write coalescing to prevent projection write amplification |
-| 🔲 [Workflow-Mediated Projections](patterns/workflow-mediated-projections/) | Ensuring projection consistency by routing all writes through workflows |
-| 🔲 [Document Builder](patterns/document-builder/) | Explicit field mapping from workflow state to search documents |
+| ✅ [Dirty-Flag Projection](patterns/dirty-flag-projection/) | Write coalescing to prevent projection write amplification |
+| ✅ [Workflow-Mediated Projections](patterns/workflow-mediated-projections/) | Ensuring projection consistency by routing all writes through workflows |
+| ✅ [Document Builder](patterns/document-builder/) | Explicit field mapping from workflow state to search documents |
 
 ### Resilience
 
 | Pattern | Summary |
 |---|---|
-| 🔲 [Redemptive State Recovery](patterns/redemptive-state-recovery/) | Returning to last known good state instead of crashing |
-| 🔲 [Feature Flags via Activities](patterns/feature-flags-via-activities/) | Runtime-switchable behavior without worker restarts |
+| ✅ [Redemptive State Recovery](patterns/redemptive-state-recovery/) | Returning to last known good state instead of crashing |
+| ✅ [Feature Flags via Activities](patterns/feature-flags-via-activities/) | Runtime-switchable behavior without worker restarts |
 
 ### Development & Operations
 
