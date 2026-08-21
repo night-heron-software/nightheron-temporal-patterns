@@ -1,7 +1,8 @@
 /**
  * Every link in every markdown file resolves:
  *   - relative links → the file (and directory README) exists; #fragments match a heading
- *   - http(s) links → 2xx/3xx (GET, browser-ish UA, 3 attempts); example/localhost hosts skipped
+ *   - http(s) links → 2xx/3xx (GET, browser-ish UA, 3 attempts); example/localhost hosts skipped;
+ *     a #fragment must match an element id in the fetched page (Docusaurus emits unquoted ids)
  */
 import { existsSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -9,7 +10,7 @@ import { headings, markdownFiles, Problems, read, ROOT, withoutFences } from './
 
 const problems = new Problems();
 const SKIP_HOSTS = /(^|\.)(example|test|invalid|localhost)(:\d+)?$/;
-const external = new Map<string, Array<{ file: string; line: number }>>();
+const external = new Map<string, Array<{ file: string; line: number; fragment: string | null }>>();
 
 function slug(text: string): string {
   return text.toLowerCase().replace(/[`*_]/g, '').replace(/[^\p{L}\p{N}\s-]/gu, '').trim().replace(/\s+/g, '-');
@@ -27,9 +28,10 @@ for (const file of markdownFiles()) {
           const host = new URL(target).hostname;
           if (SKIP_HOSTS.test(host)) continue;
         } catch { problems.add(file, i + 1, `malformed URL ${target}`); continue; }
-        const list = external.get(target) ?? [];
-        list.push({ file, line: i + 1 });
-        external.set(target, list);
+        const [base, frag = null] = target.split('#');
+        const list = external.get(base) ?? [];
+        list.push({ file, line: i + 1, fragment: frag });
+        external.set(base, list);
         continue;
       }
       if (/^mailto:/.test(target)) continue;
@@ -51,7 +53,7 @@ for (const file of markdownFiles()) {
   });
 }
 
-async function check(url: string): Promise<string | null> {
+async function check(url: string): Promise<{ error: string | null; body: string }> {
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
       const res = await fetch(url, {
@@ -60,15 +62,21 @@ async function check(url: string): Promise<string | null> {
         headers: { 'user-agent': 'Mozilla/5.0 (compatible; nightheron-temporal-patterns link check)' },
         signal: AbortSignal.timeout(20_000),
       });
-      if (res.ok || (res.status >= 300 && res.status < 400)) return null;
+      if (res.ok || (res.status >= 300 && res.status < 400)) return { error: null, body: await res.text() };
       if (res.status === 429 || res.status >= 500) { await new Promise((r) => setTimeout(r, 1500 * attempt)); continue; }
-      return `HTTP ${res.status}`;
+      return { error: `HTTP ${res.status}`, body: '' };
     } catch (err) {
-      if (attempt === 3) return `fetch failed: ${(err as Error).message}`;
+      if (attempt === 3) return { error: `fetch failed: ${(err as Error).message}`, body: '' };
       await new Promise((r) => setTimeout(r, 1500 * attempt));
     }
   }
-  return 'unreachable after 3 attempts';
+  return { error: 'unreachable after 3 attempts', body: '' };
+}
+
+function hasId(body: string, id: string): boolean {
+  const esc = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`\\sid=(?:"${esc}"|'${esc}'|${esc}(?=[\\s>]))`).test(body)
+    || new RegExp(`\\sname=(?:"${esc}"|'${esc}')`).test(body);
 }
 
 const urls = [...external.keys()];
@@ -78,8 +86,11 @@ let next = 0;
 await Promise.all(Array.from({ length: CONCURRENCY }, async () => {
   while (next < urls.length) {
     const url = urls[next++];
-    const err = await check(url);
-    if (err) for (const { file, line } of external.get(url)!) problems.add(file, line, `${err}: ${url}`);
+    const { error, body } = await check(url);
+    for (const { file, line, fragment } of external.get(url)!) {
+      if (error) problems.add(file, line, `${error}: ${url}`);
+      else if (fragment && !hasId(body, fragment)) problems.add(file, line, `fragment #${fragment} not found on ${url}`);
+    }
   }
 }));
 problems.report('links');

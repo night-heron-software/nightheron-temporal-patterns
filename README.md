@@ -49,15 +49,15 @@ problems encountered during development.
 
 | Pattern | Summary |
 |---|---|
-| 🔲 [Signals, Updates & Queries](patterns/signals-updates-queries/) | Choosing the right Temporal communication primitive |
-| 🔲 [`updateWithStart`](patterns/update-with-start/) | Atomic lazy entity creation with zero race conditions |
-| 🔲 [`allHandlersFinished`](patterns/all-handlers-finished/) | Preventing lost update responses at workflow exit points |
+| ✅ [Signals, Updates & Queries](patterns/signals-updates-queries/) | Choosing the right Temporal communication primitive |
+| ✅ [`updateWithStart`](patterns/update-with-start/) | Atomic lazy entity creation with zero race conditions |
+| ✅ [`allHandlersFinished`](patterns/all-handlers-finished/) | Preventing lost update responses at workflow exit points |
 
 ### Lifecycle
 
 | Pattern | Summary |
 |---|---|
-| 🔲 [`continueAsNew`](patterns/continue-as-new/) | Resetting event history for long-running workflows without losing state |
+| ✅ [`continueAsNew`](patterns/continue-as-new/) | Resetting event history for long-running workflows without losing state |
 | ✅ [Structured Workflow IDs](patterns/structured-workflow-ids/) | Parseable, predictable `{tenantId}.{domain}.{entityId}` identifiers |
 | 🔲 [Parent-Child with ABANDON](patterns/parent-child-abandon/) | Decoupling child workflow lifecycles from parents |
 | 🔲 [Workflow-per-Entity vs. Singleton](patterns/workflow-per-entity-vs-singleton/) | Choosing the right cardinality model |
