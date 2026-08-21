@@ -79,7 +79,7 @@ Key design choices:
 
 ```typescript
 // worker.ts — the single entrypoint for all environments
-import { NativeConnection, Runtime } from '@temporalio/worker';
+import { NativeConnection, Runtime, Worker } from '@temporalio/worker';
 
 import cartWorker from './cart/worker';
 import checkoutWorker from './checkout/worker';

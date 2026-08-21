@@ -1,0 +1,29 @@
+{
+  "name": "nightheron-temporal-patterns",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A catalog of patterns for building TypeScript applications on Temporal — documentation with type-checked examples",
+  "license": "MIT",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "check": "npm run check:lint && npm run check:structure && npm run check:catalog && npm run check:examples && npm run check:links",
+    "check:lint": "markdownlint-cli2",
+    "check:structure": "tsx scripts/check-structure.ts",
+    "check:catalog": "tsx scripts/check-catalog.ts",
+    "check:examples": "tsx scripts/check-examples.ts",
+    "check:links": "tsx scripts/check-links.ts"
+  },
+  "devDependencies": {
+    "@temporalio/activity": "^1.22.0",
+    "@temporalio/client": "^1.22.0",
+    "@temporalio/common": "^1.22.0",
+    "@temporalio/testing": "^1.22.0",
+    "@temporalio/worker": "^1.22.0",
+    "@temporalio/workflow": "^1.22.0",
+    "@types/node": "^20.19.0",
+    "markdownlint-cli2": "^0.23.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0"
+  }
+}

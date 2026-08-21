@@ -1,10 +1,34 @@
 # Worker Restart and Replay
 
 > When a worker crashes and restarts, Temporal replays the workflow from its event
-> history — understanding what replays and what doesn't is essential for safe workflow
-> evolution.
+> history — a code change that alters the sequence of commands breaks every execution
+> that is mid-flight.
 
-## What Replays
+## The Trap
+
+Workflow code must produce the **same sequence of commands** during replay as it did
+during the original execution. Violations cause `Non-Determinism` errors:
+
+```typescript fragment
+// ✅ Safe change: adding a log line between existing activity calls
+await activityA();
+log.info('checkpoint reached'); // New line — safe, no command generated
+await activityB();
+
+// ❌ Unsafe change: reordering activity calls
+await activityB(); // Was activityA — replay expects A's result here
+await activityA();
+
+// ❌ Unsafe change: adding a new activity call between existing ones
+await activityA();
+await newActivity(); // Replay has no history entry for this
+await activityB();
+```
+
+## Why It Happens — What Replays
+
+After a restart the worker re-runs the workflow function from the top, feeding it the
+recorded history instead of talking to the server. What each construct does under replay:
 
 | Construct | During Replay |
 |---|---|
@@ -21,28 +45,7 @@ The TypeScript SDK has no `sideEffect()` API (that is a Go/Java construct). For 
 non-deterministic value that must be recorded once, use a local activity or a regular
 activity.
 
-## The Non-Determinism Trap
-
-Workflow code must produce the **same sequence of commands** during replay as it did
-during the original execution. Violations cause `Non-Determinism` errors:
-
-```typescript
-// ✅ Safe change: adding a log line between existing activity calls
-await activityA();
-log.info('checkpoint reached'); // New line — safe, no command generated
-await activityB();
-
-// ❌ Unsafe change: reordering activity calls
-await activityB(); // Was activityA — replay expects A's result here
-await activityA();
-
-// ❌ Unsafe change: adding a new activity call between existing ones
-await activityA();
-await newActivity(); // Replay has no history entry for this
-await activityB();
-```
-
-## Safe Evolution
+## Prevention — Safe Evolution
 
 - **Adding a new activity at the end** of the workflow is safe for executions that have not
   yet reached that point.
@@ -52,7 +55,7 @@ await activityB();
   build that started it so old and new code never replay each other's histories.
 - **Prove it in CI.** Replay recorded histories against the new build with
   `Worker.runReplayHistories()` before deploying — see
-  [Enforcement Mechanisms — Replay Tests](../reference/enforcement-mechanisms.md#4-replay-tests).
+  [Enforcement Mechanisms — Replay Tests](../reference/enforcement-mechanisms.md#3-replay-tests).
 
 ## Workers Do Not Hot-Reload Workflow Code
 
@@ -62,7 +65,7 @@ effect for subsequent workflow tasks. This applies equally to a single-domain wo
 an all-in-one development launcher, and it is a property of the SDK, not of any pattern in
 this catalog. Other pages link here rather than repeating it.
 
-## References
+## See Also
 
 - [Temporal — Workflow Determinism](https://docs.temporal.io/workflows#deterministic-constraints)
 - [Temporal — Versioning with `patched()`](https://docs.temporal.io/develop/typescript/versioning#patched)
@@ -70,3 +73,4 @@ this catalog. Other pages link here rather than repeating it.
 - [State Machine Driver](../patterns/state-machine-driver/) and
   [Unified Worker Topology](../patterns/unified-worker-topology/) — patterns whose gotchas
   point here
+- [No Dynamic Imports](no-dynamic-imports.md) — another way to break the bundle's guarantees

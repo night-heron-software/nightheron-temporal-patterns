@@ -1,0 +1,18 @@
+{
+  // Markdown style for the catalog. Rules are tuned for prose with long code blocks.
+  "globs": ["**/*.md"],
+  "ignores": ["node_modules/**", ".examples/**"],
+  "config": {
+    "default": true,
+    "MD013": false,            // line length — prose is wrapped at ~90, tables and code are wider
+    "MD024": { "siblings_only": true },  // repeated headings allowed across sections (each pattern has "Gotchas")
+    "MD033": false,            // inline HTML — <br/> inside mermaid labels
+    "MD034": false,            // bare URLs — allowed in reference lists
+    "MD036": false,            // emphasis used as a label above code blocks ("**`activities.ts`** — ...")
+    "MD041": false,            // first line need not be a heading (README has a <title>-style blockquote)
+    "MD046": { "style": "fenced" },
+    "MD049": { "style": "asterisk" },
+    "MD060": false,            // table column style — separator rows are written |---|---| throughout
+    "MD050": { "style": "asterisk" }
+  }
+}
