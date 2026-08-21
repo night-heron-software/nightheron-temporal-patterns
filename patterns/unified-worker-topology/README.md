@@ -208,9 +208,13 @@ The same image, the same entrypoint, different `WORKER_TYPE` values.
 
 ## Provenance
 
-This is a first-party pattern. The need arises naturally in any multi-domain Temporal
-application: the SDK examples show one worker per file, which works for a single domain
-but doesn't scale to a project with multiple task queues.
+This is a first-party pattern developed across two applications: a multi-tenant
+e-commerce platform (eight domain workers, monorepo with Turborepo, plugin workers for
+third-party integrations) and a full-stack commerce demo (six domain workers, single
+repo). The demo uses the simpler form — a flat `Promise.all()` of domain worker
+imports. The platform evolved the pattern further into a declarative worker registry
+with `WORKER_TYPE` branching, per-domain metrics bind addresses, plugin worker
+lifecycle management, and a process registry for verifiable shutdown.
 
 The pattern has two known prior-art influences:
 
