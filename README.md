@@ -30,6 +30,7 @@ problems encountered during development.
 |---|---|
 | [Prepare → Decide → Finalize](patterns/prepare-decide-finalize/) | Three-phase state handler separating I/O from pure decision logic |
 | [Chassaing Decider](patterns/chassaing-decider/) | `decide(command, state) → events` + `evolve(state, event) → state` for testable business logic |
+| [State Machine Driver](patterns/state-machine-driver/) | A reusable `runStateMachine` loop that wires updates, signals, and timeouts into a state function table |
 
 ### Communication
 
