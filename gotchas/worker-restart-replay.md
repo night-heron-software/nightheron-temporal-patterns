@@ -50,7 +50,7 @@ activity.
 - **Adding a new activity at the end** of the workflow is safe for executions that have not
   yet reached that point.
 - **Changing activity order** or inserting commands requires the
-  [`patched()`](https://docs.temporal.io/develop/typescript/versioning#patched) API to branch
+  [`patched()`](https://docs.temporal.io/develop/typescript/workflows/versioning#patching) API to branch
   old vs. new executions — or Worker Deployment Versioning, which pins each execution to the
   build that started it so old and new code never replay each other's histories.
 - **Prove it in CI.** Replay recorded histories against the new build with
@@ -67,8 +67,8 @@ this catalog. Other pages link here rather than repeating it.
 
 ## See Also
 
-- [Temporal — Workflow Determinism](https://docs.temporal.io/workflows#deterministic-constraints)
-- [Temporal — Versioning with `patched()`](https://docs.temporal.io/develop/typescript/versioning#patched)
+- [Temporal — Workflow Determinism](https://docs.temporal.io/workflow-definition#deterministic-constraints)
+- [Temporal — Versioning with `patched()`](https://docs.temporal.io/develop/typescript/workflows/versioning#patching)
 - [Temporal — Worker Deployment Versioning](https://docs.temporal.io/production-deployment/worker-deployments/worker-versioning)
 - [State Machine Driver](../patterns/state-machine-driver/) and
   [Unified Worker Topology](../patterns/unified-worker-topology/) — patterns whose gotchas

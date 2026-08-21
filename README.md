@@ -34,15 +34,15 @@ problems encountered during development.
 | Pattern | Summary |
 |---|---|
 | ✅ [Two-File Activity](patterns/two-file-activity/) | Structural separation of activity contracts from implementations to prevent sandbox contamination |
-| 🔲 [Definitions File](patterns/definitions-file/) | Centralizing `defineQuery`/`defineSignal`/`defineUpdate` for safe cross-runtime imports |
-| 🔲 [Record-First DTOs](patterns/record-first-dtos/) | Using `Record<string, T>` instead of `Map`/`Set` across serialization boundaries |
+| ✅ [Definitions File](patterns/definitions-file/) | Centralizing `defineQuery`/`defineSignal`/`defineUpdate` for safe cross-runtime imports |
+| ✅ [Record-First DTOs](patterns/record-first-dtos/) | Using `Record<string, T>` instead of `Map`/`Set` across serialization boundaries |
 
 ### State Machines
 
 | Pattern | Summary |
 |---|---|
 | ✅ [Prepare → Decide → Finalize](patterns/prepare-decide-finalize/) | Three-phase state handler separating I/O from pure decision logic |
-| 🔲 [Chassaing Decider](patterns/chassaing-decider/) | `decide(command, state) → events` + `evolve(state, event) → state` for testable business logic |
+| ✅ [Chassaing Decider](patterns/chassaing-decider/) | `decide(command, state) → events` + `evolve(state, event) → state` for testable business logic |
 | ✅ [State Machine Driver](patterns/state-machine-driver/) | A reusable `runStateMachine` loop that wires updates, signals, and timeouts into a state function table |
 
 ### Communication
