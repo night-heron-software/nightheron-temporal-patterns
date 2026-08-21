@@ -123,6 +123,30 @@ Links to SDK docs, papers, and related patterns in this catalog.
 
 ---
 
+## See Also
+
+Temporal maintains its own first-party
+[Design Patterns catalog](https://docs.temporal.io/design-patterns) covering general
+Temporal usage patterns across all SDKs:
+
+- [Task Orchestration](https://docs.temporal.io/design-patterns/task-orchestration-patterns) — Child Workflows, Parallel Execution, Pick First (Race)
+- [Workflow Messaging](https://docs.temporal.io/design-patterns/workflow-messaging-patterns) — Signal with Start, Request-Response via Updates
+- [Entity & Lifecycle](https://docs.temporal.io/design-patterns/entity-lifecycle-patterns) — Entity Workflow, Continue-As-New, Updatable Timer
+- [External Interaction](https://docs.temporal.io/design-patterns/external-interaction-patterns) — Polling, Long-Running Activity, Delayed Start, Webhooks, Approval
+- [Distributed Transaction](https://docs.temporal.io/design-patterns/distributed-transaction-patterns) — Saga Pattern, Early Return
+- [Error Handling & Retry](https://docs.temporal.io/design-patterns/error-handling-patterns) — Fixed Count/Wall-Time Retries, Non-Retryable Errors, Delayed Retry, Fast/Slow Retries, Retry Metrics, Resumable Activity
+- [Batch Processing](https://docs.temporal.io/design-patterns/batch-processing-patterns) — Fan-Out with Child Workflows, Batch Iterator, Sliding Window, MapReduce Tree
+- [QoS & Throughput](https://docs.temporal.io/design-patterns/qos-throughput-patterns) — Downstream Rate Limiting, Priority Task Queues, Fairness
+- [Performance & Latency](https://docs.temporal.io/design-patterns/performance-latency-patterns) — Local Activities, Early Return via Local Activities, Eager Workflow Start
+- [Worker Configuration](https://docs.temporal.io/design-patterns/worker-configuration-patterns) — Worker-Specific Task Queues, Activity Dependency Injection
+
+The Night Heron patterns in this catalog focus on TypeScript-specific concerns (sandbox
+bundling, state machine architecture, CQRS projection strategies, enforcement mechanisms)
+that are complementary to the general patterns above. A formal overlap and equivalence
+analysis between the two catalogs is a separate future task.
+
+---
+
 ## License
 
 [MIT](LICENSE)
