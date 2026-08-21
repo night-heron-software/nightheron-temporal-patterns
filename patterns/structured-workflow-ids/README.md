@@ -243,7 +243,7 @@ simultaneously: structured IDs are self-describing, derivable, and tenant-scoped
 
 ## References
 
-- [Temporal Workflow IDs — Best Practices](https://docs.temporal.io/workflows#workflow-id)
-- [Temporal Search Attributes](https://docs.temporal.io/visibility#search-attribute)
+- [Temporal Workflow IDs — Best Practices](https://docs.temporal.io/workflow-execution/workflowid-runid#workflow-id)
+- [Temporal Search Attributes](https://docs.temporal.io/search-attribute#custom-search-attribute)
 - [`updateWithStart`](../update-with-start/) — uses the same ID builder for atomic lazy creation
 - [Enforcement Mechanisms](../../reference/enforcement-mechanisms.md) — where the lint rule above fits

@@ -34,30 +34,30 @@ problems encountered during development.
 | Pattern | Summary |
 |---|---|
 | ✅ [Two-File Activity](patterns/two-file-activity/) | Structural separation of activity contracts from implementations to prevent sandbox contamination |
-| 🔲 [Definitions File](patterns/definitions-file/) | Centralizing `defineQuery`/`defineSignal`/`defineUpdate` for safe cross-runtime imports |
-| 🔲 [Record-First DTOs](patterns/record-first-dtos/) | Using `Record<string, T>` instead of `Map`/`Set` across serialization boundaries |
+| ✅ [Definitions File](patterns/definitions-file/) | Centralizing `defineQuery`/`defineSignal`/`defineUpdate` for safe cross-runtime imports |
+| ✅ [Record-First DTOs](patterns/record-first-dtos/) | Using `Record<string, T>` instead of `Map`/`Set` across serialization boundaries |
 
 ### State Machines
 
 | Pattern | Summary |
 |---|---|
 | ✅ [Prepare → Decide → Finalize](patterns/prepare-decide-finalize/) | Three-phase state handler separating I/O from pure decision logic |
-| 🔲 [Chassaing Decider](patterns/chassaing-decider/) | `decide(command, state) → events` + `evolve(state, event) → state` for testable business logic |
+| ✅ [Chassaing Decider](patterns/chassaing-decider/) | `decide(command, state) → events` + `evolve(state, event) → state` for testable business logic |
 | ✅ [State Machine Driver](patterns/state-machine-driver/) | A reusable `runStateMachine` loop that wires updates, signals, and timeouts into a state function table |
 
 ### Communication
 
 | Pattern | Summary |
 |---|---|
-| 🔲 [Signals, Updates & Queries](patterns/signals-updates-queries/) | Choosing the right Temporal communication primitive |
-| 🔲 [`updateWithStart`](patterns/update-with-start/) | Atomic lazy entity creation with zero race conditions |
-| 🔲 [`allHandlersFinished`](patterns/all-handlers-finished/) | Preventing lost update responses at workflow exit points |
+| ✅ [Signals, Updates & Queries](patterns/signals-updates-queries/) | Choosing the right Temporal communication primitive |
+| ✅ [`updateWithStart`](patterns/update-with-start/) | Atomic lazy entity creation with zero race conditions |
+| ✅ [`allHandlersFinished`](patterns/all-handlers-finished/) | Preventing lost update responses at workflow exit points |
 
 ### Lifecycle
 
 | Pattern | Summary |
 |---|---|
-| 🔲 [`continueAsNew`](patterns/continue-as-new/) | Resetting event history for long-running workflows without losing state |
+| ✅ [`continueAsNew`](patterns/continue-as-new/) | Resetting event history for long-running workflows without losing state |
 | ✅ [Structured Workflow IDs](patterns/structured-workflow-ids/) | Parseable, predictable `{tenantId}.{domain}.{entityId}` identifiers |
 | 🔲 [Parent-Child with ABANDON](patterns/parent-child-abandon/) | Decoupling child workflow lifecycles from parents |
 | 🔲 [Workflow-per-Entity vs. Singleton](patterns/workflow-per-entity-vs-singleton/) | Choosing the right cardinality model |

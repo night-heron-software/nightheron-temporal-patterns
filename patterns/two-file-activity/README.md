@@ -234,8 +234,9 @@ interface that the implementation must `satisfies`. The motivation is twofold:
 
 ## References
 
-- [Temporal TypeScript SDK — Activity Development](https://docs.temporal.io/develop/typescript/core-application#develop-activities)
-- [Temporal TypeScript SDK — Workflow Sandbox](https://docs.temporal.io/develop/typescript/core-application#workflow-sandbox)
+- [Temporal TypeScript SDK — Activities](https://docs.temporal.io/develop/typescript/activities)
+- [Temporal — Deterministic constraints](https://docs.temporal.io/workflow-definition#deterministic-constraints) — what the workflow sandbox exists to enforce
+- [Temporal TypeScript SDK — Worker API reference](https://typescript.temporal.io/api/namespaces/worker) — `workflowsPath`, `workflowBundle`, and the bundler
 - [Definitions File](../definitions-file/) — the companion pattern for query/signal/update handles
 - [Document Builder](../document-builder/) — where `buildOrderDocument` belongs once the mapping grows
 - [No Dynamic Imports](../../gotchas/no-dynamic-imports.md) — the other way I/O code sneaks into the bundle
