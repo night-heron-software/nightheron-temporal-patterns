@@ -75,6 +75,12 @@ problems encountered during development.
 | [Redemptive State Recovery](patterns/redemptive-state-recovery/) | Returning to last known good state instead of crashing |
 | [Feature Flags via Activities](patterns/feature-flags-via-activities/) | Runtime-switchable behavior without worker restarts |
 
+### Development & Operations
+
+| Pattern | Summary |
+|---|---|
+| [Unified Worker Topology](patterns/unified-worker-topology/) | A single all-in-one worker process for local dev that fans out to per-domain processes in production |
+
 ---
 
 ## Gotchas
