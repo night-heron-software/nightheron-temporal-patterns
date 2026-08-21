@@ -13,76 +13,79 @@ problems encountered during development.
 *This documentation was drafted with AI assistance.*
 
 > [!WARNING]
-> **Early-stage work in progress.** This catalog is in its initial form — most patterns
-> are stubs with only a one-sentence summary. The fully-written entries have not been
-> reviewed by the Temporal team or validated in production at scale; they reflect patterns
-> developed during project work, not established best practices. Some patterns may overlap
-> with or duplicate concepts in the official
-> [Temporal Design Patterns](https://docs.temporal.io/design-patterns) catalog — a formal
-> equivalence analysis has not been done. Expect structural changes, renames, and
+> **Early-stage.** All twenty patterns are written and every TypeScript example compiles
+> against the Temporal TypeScript SDK (1.22) in CI — but the catalog has not been reviewed
+> by the Temporal team or validated in production at scale. It reflects patterns developed
+> during project work, not established best practices. Where an entry overlaps the official
+> [Temporal Design Patterns](https://docs.temporal.io/design-patterns) catalog, the table
+> says so; the official page is definitive for the general pattern. Expect renames and
 > corrections as the catalog matures.
 
 ---
 
 ## Pattern Catalog
 
-> Patterns marked ✅ are fully written; those marked 🔲 are stubs with a one-sentence
-> summary only.
+> ✅ = written; 🔲 = stub (title and one-sentence summary only). The **Official
+> equivalent** column names the entry in Temporal's own
+> [Design Patterns catalog](https://docs.temporal.io/design-patterns) that covers the same
+> ground, where one exists — those pages are the definitive source for the general pattern,
+> and the entry here is the TypeScript-specific discipline around it. "—" means no
+> official counterpart.
 
 ### Sandbox & Bundling
 
-| Pattern | Summary |
-|---|---|
-| ✅ [Two-File Activity](patterns/two-file-activity/) | Structural separation of activity contracts from implementations to prevent sandbox contamination |
-| ✅ [Definitions File](patterns/definitions-file/) | Centralizing `defineQuery`/`defineSignal`/`defineUpdate` for safe cross-runtime imports |
-| ✅ [Record-First DTOs](patterns/record-first-dtos/) | Using `Record<string, T>` instead of `Map`/`Set` across serialization boundaries |
+| Pattern | Summary | Official equivalent |
+|---|---|---|
+| ✅ [Two-File Activity](patterns/two-file-activity/) | Structural separation of activity contracts from implementations to prevent sandbox contamination | — |
+| ✅ [Definitions File](patterns/definitions-file/) | Centralizing `defineQuery`/`defineSignal`/`defineUpdate` for safe cross-runtime imports | — |
+| ✅ [Record-First DTOs](patterns/record-first-dtos/) | Using `Record<string, T>` instead of `Map`/`Set` across serialization boundaries | — |
 
 ### State Machines
 
-| Pattern | Summary |
-|---|---|
-| ✅ [Prepare → Decide → Finalize](patterns/prepare-decide-finalize/) | Three-phase state handler separating I/O from pure decision logic |
-| ✅ [Chassaing Decider](patterns/chassaing-decider/) | `decide(command, state) → events` + `evolve(state, event) → state` for testable business logic |
-| ✅ [State Machine Driver](patterns/state-machine-driver/) | A reusable `runStateMachine` loop that wires updates, signals, and timeouts into a state function table |
+| Pattern | Summary | Official equivalent |
+|---|---|---|
+| ✅ [Prepare → Decide → Finalize](patterns/prepare-decide-finalize/) | Three-phase state handler separating I/O from pure decision logic | — |
+| ✅ [Chassaing Decider](patterns/chassaing-decider/) | `decide(command, state) → events` + `evolve(state, event) → state` for testable business logic | — |
+| ✅ [State Machine Driver](patterns/state-machine-driver/) | A reusable `runStateMachine` loop that wires updates, signals, and timeouts into a state function table | [Entity Workflow](https://docs.temporal.io/design-patterns/entity-workflow) (implements) |
 
 ### Communication
 
-| Pattern | Summary |
-|---|---|
-| ✅ [Signals, Updates & Queries](patterns/signals-updates-queries/) | Choosing the right Temporal communication primitive |
-| ✅ [`updateWithStart`](patterns/update-with-start/) | Atomic lazy entity creation with zero race conditions |
-| ✅ [`allHandlersFinished`](patterns/all-handlers-finished/) | Preventing lost update responses at workflow exit points |
+| Pattern | Summary | Official equivalent |
+|---|---|---|
+| ✅ [Signals, Updates & Queries](patterns/signals-updates-queries/) | Choosing the right Temporal communication primitive | [Workflow Messaging](https://docs.temporal.io/design-patterns/workflow-messaging-patterns) (Request-Response via Updates) |
+| ✅ [`updateWithStart`](patterns/update-with-start/) | Atomic lazy entity creation with zero race conditions | [Workflow Messaging](https://docs.temporal.io/design-patterns/workflow-messaging-patterns) (Signal with Start / Request-Response via Updates) |
+| ✅ [`allHandlersFinished`](patterns/all-handlers-finished/) | Preventing lost update responses at workflow exit points | — |
 
 ### Lifecycle
 
-| Pattern | Summary |
-|---|---|
-| ✅ [`continueAsNew`](patterns/continue-as-new/) | Resetting event history for long-running workflows without losing state |
-| ✅ [Structured Workflow IDs](patterns/structured-workflow-ids/) | Parseable, predictable `{tenantId}.{domain}.{entityId}` identifiers |
-| ✅ [Parent-Child with ABANDON](patterns/parent-child-abandon/) | Decoupling child workflow lifecycles from parents |
-| ✅ [Workflow-per-Entity vs. Singleton](patterns/workflow-per-entity-vs-singleton/) | Choosing the right cardinality model |
-| ✅ [Standalone Activities](patterns/standalone-activities/) | When a thin single-activity wrapper should skip the workflow shell |
+| Pattern | Summary | Official equivalent |
+|---|---|---|
+| ✅ [`continueAsNew`](patterns/continue-as-new/) | Resetting event history for long-running workflows without losing state | [Entity & Lifecycle](https://docs.temporal.io/design-patterns/entity-lifecycle-patterns) (Continue-As-New) |
+| ✅ [Structured Workflow IDs](patterns/structured-workflow-ids/) | Parseable, predictable `{tenantId}.{domain}.{entityId}` identifiers | — |
+| ✅ [Parent-Child with ABANDON](patterns/parent-child-abandon/) | Decoupling child workflow lifecycles from parents | [Task Orchestration](https://docs.temporal.io/design-patterns/task-orchestration-patterns) (Child Workflows) |
+| ✅ [Workflow-per-Entity vs. Singleton](patterns/workflow-per-entity-vs-singleton/) | Choosing the right cardinality model | [Entity & Lifecycle](https://docs.temporal.io/design-patterns/entity-lifecycle-patterns) (Entity Workflow) |
+| ✅ [Standalone Activities](patterns/standalone-activities/) | When a thin single-activity wrapper should skip the workflow shell | — |
 
 ### CQRS & Projections
 
-| Pattern | Summary |
-|---|---|
-| ✅ [Dirty-Flag Projection](patterns/dirty-flag-projection/) | Write coalescing to prevent projection write amplification |
-| ✅ [Workflow-Mediated Projections](patterns/workflow-mediated-projections/) | Ensuring projection consistency by routing all writes through workflows |
-| ✅ [Document Builder](patterns/document-builder/) | Explicit field mapping from workflow state to search documents |
+| Pattern | Summary | Official equivalent |
+|---|---|---|
+| ✅ [Dirty-Flag Projection](patterns/dirty-flag-projection/) | Write coalescing to prevent projection write amplification | — |
+| ✅ [Workflow-Mediated Projections](patterns/workflow-mediated-projections/) | Ensuring projection consistency by routing all writes through workflows | — |
+| ✅ [Document Builder](patterns/document-builder/) | Explicit field mapping from workflow state to search documents | — |
 
 ### Resilience
 
-| Pattern | Summary |
-|---|---|
-| ✅ [Redemptive State Recovery](patterns/redemptive-state-recovery/) | Returning to last known good state instead of crashing |
-| ✅ [Feature Flags via Activities](patterns/feature-flags-via-activities/) | Runtime-switchable behavior without worker restarts |
+| Pattern | Summary | Official equivalent |
+|---|---|---|
+| ✅ [Redemptive State Recovery](patterns/redemptive-state-recovery/) | Returning to last known good state instead of crashing | [Distributed Transaction](https://docs.temporal.io/design-patterns/distributed-transaction-patterns) (Saga — adjacent) |
+| ✅ [Feature Flags via Activities](patterns/feature-flags-via-activities/) | Runtime-switchable behavior without worker restarts | — |
 
 ### Development & Operations
 
-| Pattern | Summary |
-|---|---|
-| ✅ [Unified Worker Topology](patterns/unified-worker-topology/) | A single all-in-one worker process for local dev that fans out to per-domain processes in production |
+| Pattern | Summary | Official equivalent |
+|---|---|---|
+| ✅ [Unified Worker Topology](patterns/unified-worker-topology/) | A single all-in-one worker process for local dev that fans out to per-domain processes in production | [Worker Configuration](https://docs.temporal.io/design-patterns/worker-configuration-patterns) (Worker-Specific Task Queues — partial) |
 
 ---
 
@@ -169,38 +172,23 @@ The lint rule, type trick, or habit that stops it.
 
 ## See Also
 
-The patterns that cite this gotcha, and related gotchas.
-```
-
----
-
-## See Also
-
-Temporal maintains its own first-party
+Temporal maintains a first-party
 [Design Patterns catalog](https://docs.temporal.io/design-patterns) covering general
-Temporal usage patterns across all SDKs:
+usage patterns across all SDKs — Task Orchestration, Workflow Messaging, Entity &
+Lifecycle, External Interaction, Distributed Transaction, Error Handling & Retry, Batch
+Processing, QoS & Throughput, Performance & Latency, and Worker Configuration. It is the
+**definitive source** for those patterns; the "Official equivalent" column above maps
+each entry here to its counterpart, and an entry that has one is written as "what the
+official page doesn't say for TypeScript" rather than a restatement.
 
-- [Task Orchestration](https://docs.temporal.io/design-patterns/task-orchestration-patterns) — Child Workflows, Parallel Execution, Pick First (Race)
-- [Workflow Messaging](https://docs.temporal.io/design-patterns/workflow-messaging-patterns) — Signal with Start, Request-Response via Updates
-- [Entity & Lifecycle](https://docs.temporal.io/design-patterns/entity-lifecycle-patterns) — Entity Workflow, Continue-As-New, Updatable Timer
-- [External Interaction](https://docs.temporal.io/design-patterns/external-interaction-patterns) — Polling, Long-Running Activity, Delayed Start, Webhooks, Approval
-- [Distributed Transaction](https://docs.temporal.io/design-patterns/distributed-transaction-patterns) — Saga Pattern, Early Return
-- [Error Handling & Retry](https://docs.temporal.io/design-patterns/error-handling-patterns) — Fixed Count/Wall-Time Retries, Non-Retryable Errors, Delayed Retry, Fast/Slow Retries, Retry Metrics, Resumable Activity
-- [Batch Processing](https://docs.temporal.io/design-patterns/batch-processing-patterns) — Fan-Out with Child Workflows, Batch Iterator, Sliding Window, MapReduce Tree
-- [QoS & Throughput](https://docs.temporal.io/design-patterns/qos-throughput-patterns) — Downstream Rate Limiting, Priority Task Queues, Fairness
-- [Performance & Latency](https://docs.temporal.io/design-patterns/performance-latency-patterns) — Local Activities, Early Return via Local Activities, Eager Workflow Start
-- [Worker Configuration](https://docs.temporal.io/design-patterns/worker-configuration-patterns) — Worker-Specific Task Queues, Activity Dependency Injection
-
-The official Temporal documentation is the **definitive source** for those patterns —
-this repository's summary of them may not be up to date. They are listed here only for
-the purpose of identifying redundancy and overlap between the two catalogs; always refer
-to [docs.temporal.io/design-patterns](https://docs.temporal.io/design-patterns) for
-current descriptions and examples.
-
-The Night Heron patterns in this catalog focus on TypeScript-specific concerns (sandbox
-bundling, state machine architecture, CQRS projection strategies, enforcement mechanisms)
-that are complementary to the general patterns above. A formal overlap and equivalence
-analysis between the two catalogs is a separate future task.
+The entries with no counterpart are where this catalog earns its keep: sandbox bundling
+(Two-File Activity, Definitions File, Record-First DTOs), state-machine architecture
+(Prepare → Decide → Finalize, Chassaing Decider, State Machine Driver, Redemptive State
+Recovery), CQRS projections (Dirty-Flag, Workflow-Mediated, Document Builder), and the
+operational conventions (Structured Workflow IDs, Unified Worker Topology, Feature Flags
+via Activities, Standalone Activities) — plus
+[Enforcement Mechanisms](reference/enforcement-mechanisms.md), which is about making any
+of the above stick.
 
 ---
 
