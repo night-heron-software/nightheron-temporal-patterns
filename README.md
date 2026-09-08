@@ -107,6 +107,7 @@ the patterns that cite it:
 | [Narrowing Across `condition()`](gotchas/narrowing-across-condition.md) | TypeScript type narrowing breaks when signal handlers reassign during yields |
 | [No Dynamic Imports](gotchas/no-dynamic-imports.md) | `import()` in workflow code bypasses the deterministic sandbox |
 | [Worker Restart Replay](gotchas/worker-restart-replay.md) | Understanding what replays and what doesn't after a worker crash |
+| [Projection Store Refuses Writes](gotchas/projection-store-refuses-writes.md) | A write-blocked index looks healthy; live workflows self-heal, terminal ones do not |
 
 ---
 

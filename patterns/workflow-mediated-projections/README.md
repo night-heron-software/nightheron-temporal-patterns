@@ -218,6 +218,11 @@ the next direct write a loud failure in development instead of a quiet one in pr
 6. **Coalesce.** One write per mutation is correct but wasteful; combine with
    [Dirty-Flag Projection](../dirty-flag-projection/) as the example does.
 
+7. **A store that refuses writes still answers reads.** Liveness checks stay green while
+   every projection is dropped, and the entities that never recover are the ones that
+   reached their terminal state during the outage — see
+   [When the Projection Store Refuses Writes](../../gotchas/projection-store-refuses-writes.md).
+
 ## References
 
 - [Dirty-Flag Projection](../dirty-flag-projection/) — coalescing the writes this pattern routes

@@ -187,7 +187,9 @@ absorbed the idea: its `onContextUpdate` hook marks dirty, and its loop flushes.
 3. **A flush that always fails pins `dirty` true and spins the loop.** The example's
    `catch` sets `dirty` again and the loop immediately retries. Add a backoff (`await
    sleep('5s')` in the catch) or a failure counter if the projection store can be down for
-   long — the workflow should idle, not hammer.
+   long — the workflow should idle, not hammer. What "repairable" is worth when the store
+   is down for hours, and where it stops being true, is
+   [When the Projection Store Refuses Writes](../../gotchas/projection-store-refuses-writes.md).
 
 4. **Projection staleness across `continueAsNew`.** Rule 4 handles the normal case; a
    worker crash between the flush and the `continueAsNew` command re-runs the flush on
