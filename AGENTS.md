@@ -24,7 +24,7 @@ no runnable application.
    A stub is a title, a one-sentence summary, and `<!-- TODO: Full pattern writeup -->`.
 4. **Gotcha template.** Every `gotchas/*.md` follows: The Trap → (Symptoms) → Why → Prevention
    or Fix → See Also. Each gotcha links back to the patterns that cite it.
-5. **Mermaid-only diagrams.** Use ` ```mermaid ` fenced blocks; never ASCII/box-art.
+5. **No ASCII or character-based diagrams.** They don't render well in Markdown or other formats. Use ` ```mermaid ` fenced blocks.
 6. **No silent fallbacks** in code examples. Show explicit error handling.
 7. **Claims about the SDK are verified, not remembered.** Before stating what an API is
    called, what it is typed as, or what it does on replay, check the `@temporalio/*` type
@@ -39,7 +39,7 @@ no runnable application.
 npm run check            # everything below
 npm run check:lint       # markdownlint
 npm run check:links      # every external link resolves
-npm run check:structure  # templates, mermaid-only, no absolute paths, no forbidden names
+npm run check:structure  # templates, no box-art diagrams, no absolute paths, no forbidden names
 npm run check:catalog    # README table ⇔ patterns/ directories, ✅/🔲 markers ⇔ stub state
 npm run check:examples   # extract ```typescript blocks and tsc --noEmit them against the SDK
 ```

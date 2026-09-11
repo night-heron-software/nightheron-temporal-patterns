@@ -2,7 +2,7 @@
  * Structural rules from AGENTS.md:
  *   3. non-stub patterns follow Problem → Solution → Example → Provenance → Gotchas → References
  *   4. gotchas follow The Trap → … → See Also
- *   5. mermaid-only diagrams (no box-drawing characters, no ```text diagrams)
+ *   5. no ASCII or character-based diagrams (no box-drawing characters, no ```text diagrams)
  *   2. no absolute paths, no secrets
  *   1. no links/names of non-public sibling repositories (generic shape check — the list of
  *      names is deliberately NOT in this repo)
@@ -59,7 +59,7 @@ for (const file of markdownFiles()) {
     if (h2[h2.length - 1] !== 'See Also') problems.add(file, null, 'last section of a gotcha must be "## See Also" (links back to the patterns that cite it)');
   }
 
-  // Mermaid-only diagrams
+  // No ASCII or character-based diagrams
   const prose = withoutFences(md);
   for (const f of fences(md)) {
     if (/[┌┐└┘├┤┬┴┼│─╔╗╚╝║═]/.test(f.body)) problems.add(file, f.line, 'box-drawing characters in a code block — use a ```mermaid diagram (rule 5)');
