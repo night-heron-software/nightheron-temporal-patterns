@@ -22,8 +22,7 @@ steps on every pull request and re-runs the link check weekly.
    line `<!-- TODO: Full pattern writeup -->`.
 2. Add a row to the right section of the catalog table in `README.md`. Mark it 🔲 while
    it is a stub and ✅ once the TODO marker is gone — `check:catalog` fails on drift.
-3. Write it. Problem → Solution → Example → Provenance → Gotchas → References, in that
-   order; `check:structure` enforces the order and the mermaid-only diagram rule.
+3. Write it. Problem → Solution → Example → Provenance → Gotchas → References, in that order; `check:structure` enforces the order and the no-character-based-diagrams rule.
 4. Link related patterns and gotchas in **References**, and add a back-link from any
    gotcha the pattern cites.
 
