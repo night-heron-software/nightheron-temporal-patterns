@@ -108,6 +108,7 @@ the patterns that cite it:
 | [No Dynamic Imports](gotchas/no-dynamic-imports.md) | `import()` in workflow code bypasses the deterministic sandbox |
 | [Worker Restart Replay](gotchas/worker-restart-replay.md) | Understanding what replays and what doesn't after a worker crash |
 | [Projection Store Refuses Writes](gotchas/projection-store-refuses-writes.md) | A write-blocked index looks healthy; live workflows self-heal, terminal ones do not |
+| [Time-Skipping Capture Traps](gotchas/time-skipping-capture-traps.md) | Pin `@temporalio/proto` exactly; time skips only while a result is awaited; `result()` on an unstarted child rejects |
 
 ---
 
