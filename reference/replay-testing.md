@@ -191,5 +191,6 @@ as such.
 - [`Worker.runReplayHistories` API reference](https://typescript.temporal.io/api/classes/worker.Worker#runreplayhistories)
 - [`temporal workflow show`](https://docs.temporal.io/cli/command-reference/workflow#show)
 - [Worker Restart and Replay](../gotchas/worker-restart-replay.md) — what replay re-executes and what it reads from history
+- [Time-Skipping Capture Traps](../gotchas/time-skipping-capture-traps.md) — three traps a capture script hits on the time-skipping environment
 - [Versioning Strategy](../patterns/versioning-strategy/) — what to do when the replay test fails on purpose
 - [State Machine Driver](../patterns/state-machine-driver/) — the registry the coverage check reads
