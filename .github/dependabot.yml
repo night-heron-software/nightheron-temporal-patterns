@@ -1,0 +1,21 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      # The @temporalio/* packages are released together and must be installed at one version.
+      temporal-sdk:
+        patterns:
+          - '@temporalio/*'
+      tooling:
+        patterns:
+          - '*'
+        exclude-patterns:
+          - '@temporalio/*'
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
