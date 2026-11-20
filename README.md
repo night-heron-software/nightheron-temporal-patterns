@@ -13,13 +13,7 @@ problems encountered during development.
 *This documentation was drafted with AI assistance.*
 
 > [!WARNING]
-> **Early-stage.** All twenty-two patterns are written and every TypeScript example compiles
-> against the Temporal TypeScript SDK (1.22) in CI — but the catalog has not been reviewed
-> by the Temporal team or validated in production at scale. It reflects patterns developed
-> during project work, not established best practices. Where an entry overlaps the official
-> [Temporal Design Patterns](https://docs.temporal.io/design-patterns) catalog, the table
-> says so; the official page is definitive for the general pattern. Expect renames and
-> corrections as the catalog matures.
+> **Early-stage.** Every pattern is written and every TypeScript example compiles in CI against the Temporal TypeScript SDK version pinned in [`package.json`](package.json) — but the catalog has not been reviewed by the Temporal team or validated in production at scale. It reflects patterns developed during project work, not established best practices. Where an entry overlaps the official [Temporal Design Patterns](https://docs.temporal.io/design-patterns) catalog, the table says so; the official page is definitive for the general pattern. Expect renames and corrections as the catalog matures.
 
 ---
 

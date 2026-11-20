@@ -202,12 +202,7 @@ came from a worker whose `AUTO_UPGRADE` default quietly applied to a cart workfl
 
 ## Gotchas
 
-1. **Server and SDK support.** Worker Deployment Versioning needs a server with the
-   feature enabled (current releases; check yours — it is enabled on the local dev server
-   used to verify this page). The older `buildId` / `useVersioning` worker options are
-   `@deprecated`; do not mix them with `workerDeploymentOptions`. Upgrade-on-Continue-as-New
-   (`targetWorkerDeploymentVersionChanged`, `initialVersioningBehavior`) is marked
-   experimental in SDK 1.22.
+1. **Server and SDK support.** Worker Deployment Versioning needs a server with the feature enabled (current releases; check yours — it is enabled on the local dev server used to verify this page). The older `buildId` / `useVersioning` worker options are `@deprecated`; do not mix them with `workerDeploymentOptions`. Upgrade-on-Continue-as-New (`targetWorkerDeploymentVersionChanged`, `initialVersioningBehavior`) is still marked `@experimental` as of SDK 1.26.
 
 2. **`AUTO_UPGRADE` + reordering = the classic incident.** The new build picks up every
    running execution on its next workflow task; if the command sequence changed without a
@@ -219,9 +214,7 @@ came from a worker whose `AUTO_UPGRADE` default quietly applied to a cart workfl
    executions drain, those executions stall — see the docs on recovering pinned workflows.
    Sunset a version after `describe-version` shows it has drained, not after the deploy.
 
-4. **Children and `continueAsNew` runs follow the parent's behaviour by default.** A child
-   of a pinned parent is pinned to the same version; a child of an auto-upgrade parent
-   auto-upgrades. Check with `temporal workflow describe` before assuming.
+4. **Children and `continueAsNew` runs follow the parent's behaviour by default.** A child of a pinned parent is pinned to the same version; a child of an auto-upgrade parent auto-upgrades. Check with `temporal workflow describe` before assuming. To start a child on a different footing, child workflow options take a `versioningOverride` (pin to a version, auto-upgrade, or route only the first task to a version) — added in SDK 1.25, marked `@experimental`, and it needs Temporal Server 1.32 or later.
 
 5. **Activity implementations are not versioned by history.** Changing an activity's body
    is always safe for replay (results come from history). Changing its *name* or its
