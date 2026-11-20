@@ -19,10 +19,7 @@ can be non-deterministic. For a one-line body, all of that is overhead with no b
 
 ## Solution
 
-Start the activity **directly from the client**: the TypeScript SDK's `client.activity`
-(Standalone Activities, marked `@experimental` as of SDK 1.22) runs a single activity
-with the same retry policy, timeouts, heartbeating, cancellation, and visibility an
-activity gets inside a workflow — and no workflow.
+Start the activity **directly from the client**: the TypeScript SDK's `client.activity` (Standalone Activities, stable since SDK 1.24) runs a single activity with the same retry policy, timeouts, heartbeating, cancellation, and visibility an activity gets inside a workflow — and no workflow.
 
 ```mermaid
 flowchart LR
@@ -124,20 +121,11 @@ export async function sendEmailWorkflow(to: string, template: string, vars: Reco
 
 ## Provenance
 
-Standalone Activities are a Temporal server and SDK feature (experimental in the
-TypeScript SDK as of 1.22). The first-party contribution is the **decision rule** and the
-**"stop at one" corollary**, formed while auditing a commerce codebase's worker registry:
-of a dozen workflow types on the notifications queue, nine were single-activity wrappers.
-Before the feature existed the honest alternatives were to keep the wrapper or to call the
-provider directly with hand-rolled retries; the rule was still useful then as a marker —
-"this is a wrapper; replace it when the platform allows" — and it is now actionable.
+Standalone Activities are a Temporal server and SDK feature (generally available; stable in the TypeScript SDK since 1.24). The first-party contribution is the **decision rule** and the **"stop at one" corollary**, formed while auditing a commerce codebase's worker registry: of a dozen workflow types on the notifications queue, nine were single-activity wrappers. Before the feature existed the honest alternatives were to keep the wrapper or to call the provider directly with hand-rolled retries; the rule was still useful then as a marker — "this is a wrapper; replace it when the platform allows" — and it is now actionable.
 
 ## Gotchas
 
-1. **Experimental API.** `client.activity` is marked `@experimental` in SDK 1.22 —
-   the shape may change between minor versions, and the server must support standalone
-   activities. Pin the SDK version in a project that adopts it and read the release notes
-   on upgrade. The *decision rule* does not depend on the API.
+1. **Version floors, and one part still experimental.** Standalone Activities need TypeScript SDK 1.24 or later, Temporal Server 1.32 or later, and Temporal CLI 1.9.1 or later — check the server before adopting. `client.activity` itself is stable, but the operator commands on the handle — `pause`, `unpause`, `updateOptions`, `restoreOriginalOptions` — are still marked `@experimental` as of SDK 1.26, so do not build on those without reading the release notes on upgrade. The *decision rule* does not depend on the API.
 
 2. **The ID is the idempotency key — use it.** A client retry of `start()` with the same
    `id` while the first is still running is rejected as already-started; treat that as
@@ -161,7 +149,8 @@ provider directly with hand-rolled retries; the rule was still useful then as a 
 
 ## References
 
-- [Temporal TypeScript SDK — Activities](https://docs.temporal.io/develop/typescript/activities)
+- [Temporal — Standalone Activity](https://docs.temporal.io/standalone-activity) — release stages, limitations, server and CLI version requirements
+- [Temporal TypeScript SDK — Standalone Activities](https://docs.temporal.io/develop/typescript/activities/standalone-activities)
 - [Temporal TypeScript SDK — ActivityClient API reference](https://typescript.temporal.io/api/classes/client.ActivityClient)
 - [Two-File Activity](../two-file-activity/) — the contract/implementation split the example uses
 - [Unified Worker Topology](../unified-worker-topology/) — where the notifications worker lives
