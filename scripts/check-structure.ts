@@ -6,10 +6,19 @@
  *   2. no absolute paths, no secrets
  *   1. no links/names of non-public sibling repositories (generic shape check — the list of
  *      names is deliberately NOT in this repo)
+ *   7. a claim dated "as of SDK <major.minor>" names the SDK version in package.json, so an
+ *      SDK bump fails here until each dated claim has been checked again
  */
 import { fences, headings, markdownFiles, Problems, read, withoutFences } from './lib/markdown.ts';
 
 const problems = new Problems();
+
+const sdkRange: unknown = JSON.parse(read('package.json')).devDependencies?.['@temporalio/workflow'];
+const sdkMinor = typeof sdkRange === 'string' ? /(\d+\.\d+)\.\d+/.exec(sdkRange)?.[1] : undefined;
+if (!sdkMinor) {
+  throw new Error(`package.json devDependencies["@temporalio/workflow"] is not a version range with major.minor.patch: ${JSON.stringify(sdkRange)}`);
+}
+const DATED_SDK_CLAIM = /\bas\s+of\s+SDK\s+(\d+\.\d+)/g;
 const PATTERN_ORDER = ['Problem', 'Solution', 'Example', 'Provenance', 'Gotchas', 'References'];
 const STUB_MARKER = '<!-- TODO: Full pattern writeup -->';
 
@@ -66,6 +75,14 @@ for (const file of markdownFiles()) {
     if (f.lang === '' && /-->|->|==>/.test(f.body) && f.body.split('\n').length > 2) problems.add(file, f.line, 'untyped fenced block that looks like a diagram — use ```mermaid (rule 5)');
   }
   if (/[┌┐└┘├┤┬┴┼│─]/.test(prose)) problems.add(file, null, 'box-drawing characters outside a code block (rule 5)');
+
+  // Dated SDK claims
+  for (const m of md.matchAll(DATED_SDK_CLAIM)) {
+    if (m[1] !== sdkMinor) {
+      const line = md.slice(0, m.index).split('\n').length;
+      problems.add(file, line, `claim dated "as of SDK ${m[1]}" but package.json pins SDK ${sdkMinor} — check the claim against the installed type definitions, then update the version (rule 7)`);
+    }
+  }
 
   // Forbidden content
   md.split('\n').forEach((line, i) => {

@@ -54,6 +54,8 @@ the `@temporalio/*` type definitions in `node_modules` — the catalog has shipp
 confidently-worded claims that were wrong, and the example check exists because of it.
 When a claim cannot be expressed in a compiling example, cite the doc page that states it.
 
+A claim that can stop being true when the SDK moves — "still marked `@experimental`", "not yet supported" — is written with the exact phrase `as of SDK <major.minor>`, naming the version in `package.json`. The structure check fails when the two differ, so an SDK bump (Dependabot opens one for the `@temporalio/*` packages together) stays red until each dated claim has been checked against the new type definitions and its version updated. A fact that cannot change — "stable since SDK 1.24", "added in SDK 1.25" — is not dated this way.
+
 ## Commits and branches
 
 Branch per change, merge with a merge commit (no squash, no rebase-merge). Commit
