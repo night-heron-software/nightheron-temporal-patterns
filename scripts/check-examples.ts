@@ -57,7 +57,6 @@ writeFileSync(join(OUT, 'tsconfig.json'), JSON.stringify({
     allowImportingTsExtensions: true,
     types: ['node'],
     typeRoots: ['../node_modules/@types'],
-    baseUrl: '..',
   },
   include: ['./**/*.ts'],
 }, null, 2));
@@ -83,17 +82,22 @@ function ignorable(code: number, message: string): boolean {
 }
 
 let output = '';
+let compilerError: unknown;
 try {
   execFileSync('npx', ['tsc', '-p', join(OUT, 'tsconfig.json'), '--pretty', 'false'], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
 } catch (err) {
-  output = String((err as { stdout?: string }).stdout ?? '') + String((err as { stderr?: string }).stderr ?? '');
+  compilerError = err;
+  const { stdout, stderr } = err as { stdout?: unknown; stderr?: unknown };
+  output = [stdout, stderr].filter((s): s is string => typeof s === 'string').join('');
 }
 
 const problems = new Problems();
 let ignored = 0;
+let parsed = 0;
 for (const line of output.split('\n')) {
   const m = /^(.+?)\((\d+),(\d+)\): error TS(\d+): (.*)$/.exec(line.trim());
   if (!m) continue;
+  parsed += 1;
   const [, file, row, , codeStr, message] = m;
   const code = Number(codeStr);
   if (ignorable(code, message)) { ignored += 1; continue; }
@@ -101,6 +105,9 @@ for (const line of output.split('\n')) {
   const origin = origins.get(rel);
   if (origin) problems.add(origin.md, origin.fenceLine + Number(row), `TS${code}: ${message}  [${rel}]`);
   else problems.add(rel, Number(row), `TS${code}: ${message}`);
+}
+if (compilerError !== undefined && parsed === 0) {
+  throw new Error(`tsc failed without printing a diagnostic this script can parse, so the examples were not type-checked.\n${String(compilerError)}\n${output}`);
 }
 console.log(`  ${ignored} diagnostics ignored as domain-stand-in noise`);
 problems.report('examples');
