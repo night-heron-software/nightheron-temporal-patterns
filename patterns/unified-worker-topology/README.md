@@ -284,9 +284,7 @@ const WORKER_REGISTRY: Record<string, DomainWorkerSpec> = {
 Both the long-lived launcher and (if applicable) a Lambda handler read from this
 same registry. Adding a new domain means one entry — not two separate wiring jobs.
 
-`workflowsPath` pointing at a `.ts` file works under `tsx`/`ts-node` in development. A
-production image should pre-bundle each domain once with `bundleWorkflowCode()` and pass
-`workflowBundle` instead — the registry entry carries the bundle path in that case.
+`workflowsPath` pointing at a `.ts` file works under `tsx`/`ts-node` in development. A production image should pre-bundle each domain once with `bundleWorkflowCode()` and pass `workflowBundle` instead — the registry entry carries the bundle path in that case. Build the bundle in the same image build as the worker: since SDK 1.25 a worker refuses to load a bundle produced by any other SDK version (the match is exact), so a bundle cached from an earlier build throws at `Worker.create()` after an SDK upgrade.
 
 ## Example: deployment configurations
 
