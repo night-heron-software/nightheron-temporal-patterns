@@ -39,7 +39,7 @@ no runnable application.
 npm run check            # everything below
 npm run check:lint       # markdownlint
 npm run check:links      # every external link resolves
-npm run check:structure  # templates, no box-art diagrams, no absolute paths, no forbidden names
+npm run check:structure  # templates, no box-art diagrams, no absolute paths, no forbidden names, dated SDK claims match package.json
 npm run check:catalog    # README table ⇔ patterns/ directories, ✅/🔲 markers ⇔ stub state
 npm run check:examples   # extract ```typescript blocks and tsc --noEmit them against the SDK
 ```
