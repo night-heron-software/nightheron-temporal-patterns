@@ -21,9 +21,9 @@
     "@temporalio/testing": "^1.26.0",
     "@temporalio/worker": "^1.26.0",
     "@temporalio/workflow": "^1.26.0",
-    "@types/node": "^20.19.0",
-    "markdownlint-cli2": "^0.23.0",
-    "tsx": "^4.20.0",
-    "typescript": "^5.9.0"
+    "@types/node": "^26.6.6",
+    "markdownlint-cli2": "^0.24.2",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
   }
 }
